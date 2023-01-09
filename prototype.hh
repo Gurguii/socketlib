@@ -9,28 +9,20 @@
 #include <string>
 #include <typeinfo>
 
-// read(), recv() default buffer size when reading
-constexpr int BUFF_SIZE = 1024;
+constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
 
-enum class sock_types : int
+namespace sock_types
 {
-    tcp = 1, // == 1
-    udp = 2  // == 2
-};
+    constexpr int tcp = 0;
+    constexpr int udp = 1;
+}
 
-enum class sock_behaviour : int
+namespace sock_behaviour
 {
-    block,   // == 0
-    nonblock // == 1
-};
+    constexpr int block = 0;
+    constexpr int noblock = 1;
+}
 
-// Socket types
-constexpr int tcp = 1;
-constexpr int udp = 0;
-
-// Socket behaviour
-constexpr int BLOCK = 1;
-constexpr int NOBLOCK = 0;
 
 namespace gsocket
 {
@@ -47,12 +39,26 @@ namespace gsocket
             return message;
         }
     };
-    /* 
-        Returns 2 AF_LOCAL sockets of type 'SOCK_STREAM'(tcp) or 'SOCK_DGRAM'(udp) 
-        https://man7.org/linux/man-pages/man2/socketpair.2.html
-        https://man7.org/linux/man-pages/man2/socket.2.html
-    */
-    class __sw
+
+    struct send
+    {
+        template <typename T> send(str_view data, T &obj)
+        {
+            ::send(obj.sock, &data[0], data.size(), 0);      
+        } 
+        template <typename T> send(str_view data, int &bytes, T &obj)
+        {
+            printf("2\n");
+            printf("%i : %i : %i\n", obj.domain, obj.type, obj.protocol);
+        }
+        template <typename T> send(str_view data, int &&bytes, T&obj)
+        {
+            printf("3\n");
+            printf("%i : %i : %i\n", obj.domain, obj.type, obj.protocol);
+        }
+    };
+
+    class __sw // POSIX socket wrapper
     {
         protected:
 
@@ -203,14 +209,14 @@ namespace gsocket
 
         /*
             Sends data through socket
-        */
+        
         int send(str_view data)
         {
             return ::send(this->sock, &data[0], data.size(), 0);
         }
         /*
             Sends n bytes of data through socket
-        */ 
+         
         int send(str_view data, int &n)
         {
             return ::send(this->sock, &data[0], n, 0);
@@ -282,7 +288,7 @@ namespace gsocket
         {
             recv(int &bytes)
             {
-
+                
             }
             recv(int &&bytes)
             {
@@ -340,10 +346,6 @@ namespace gsocket
         }
     };
 
-    /*
-        Friendly tcp_socket class that allows sending/receiving
-        data easily.
-    */
     class tcp_socket : public __sw
     {
         protected:
@@ -447,19 +449,21 @@ namespace gsocket
         }
     };
 
+
     /* 
-    Returns std::pair containing 2 connected gsocket::socket(AF_LOCAL, type, 0) 
-    using auto deconstructor you can do: 
-    auto [fd1, fd2] = gsocket::getsocketpair("tcp") // fd1 and fd2 are gsocket::sockets(AF_LOCAL, SOCK_STREAM, 0) instances connected w eachother
+        Returns 2 AF_LOCAL sockets (tcp/udp) wrapped with gsocket::socket() class 
+        https://man7.org/linux/man-pages/man2/socketpair.2.html
+        socket domains & types - https://man7.org/linux/man-pages/man2/socket.2.html
     */
-    std::pair<gsocket::socket, gsocket::socket> getsocketpair(sock_types type)
+    std::pair<gsocket::socket, gsocket::socket> getsocketpair(int type)
     {   
-        if(type == tcp)
+        if(type != sock_types::tcp && type != sock_types::udp)
         {
             throw CustomExceptions("Socketpair type must be tcp/udp\n");
         }
+
         std::pair<int, int>fds;
-        if(::socketpair(AF_LOCAL, (type == "tcp" ? SOCK_STREAM : SOCK_DGRAM), 0, &fds.first))
+        if(::socketpair(AF_LOCAL, (type == sock_types::tcp ? SOCK_STREAM : SOCK_DGRAM), 0, &fds.first))
         {
             throw CustomExceptions("Couldn't create socketpair");
         }
