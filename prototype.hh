@@ -1,6 +1,6 @@
 #ifndef GSOCKETS
 #define GSOCKETS
-
+// try to add map with interfaces using pointers setting map as constexpr and deleting pointers afterward
 #include <cstring>
 #include <cstdio>
 #include <sys/socket.h>
@@ -29,7 +29,6 @@ enum struct s_protocol : uint8_t
     block = 0, // BLOCKING FILE DESCRIPTOR - DEFAULT
     noblock = 1 // NONBLOCKING FILE DESCRIPTOR
 };
-
 namespace gsocket
 {
     using str = std::string;
