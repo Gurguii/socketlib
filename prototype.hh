@@ -7,8 +7,10 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <string>
+#include <errno.h>
 
 constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
+constexpr bool GSOCKET_EXCEPTIONS = false; 
 
 enum struct s_domains : uint8_t
 {
@@ -24,7 +26,7 @@ enum struct s_types : uint8_t
 
 enum struct s_protocol : uint8_t
 {
-    block = 0, // BLOCKING FILE DESCRIPTOR
+    block = 0, // BLOCKING FILE DESCRIPTOR - DEFAULT
     noblock = 1 // NONBLOCKING FILE DESCRIPTOR
 };
 
@@ -95,7 +97,10 @@ namespace gsocket
             ::getpeername(this->sock, (sockaddr *)&s, (socklen_t *)&addrl);
             return {inet_ntoa(s.sin_addr), htons(s.sin_port)};
         }
-
+        /*
+            TODO: allow inputting interfaces name (eth0, lo, etc...) // check if iface input contains '.' ?
+        */
+        // Bind to port ready to listen in any address(interfaces)
         void bind(int &port)
         {   
             sockaddr_in *addr = new sockaddr_in;
@@ -122,7 +127,6 @@ namespace gsocket
             delete addr;
             delete opt;
         }
-
         void bind(int &&port)
         {   
             sockaddr_in *addr = new sockaddr_in;
@@ -150,7 +154,8 @@ namespace gsocket
             delete opt;
         }
 
-        void bind(str_view interface_addr, int &&port)
+        // Bind to port and readyto listen in given addr
+        void bind(str_view iface, int &&port)
         {
             sockaddr_in *addr = new sockaddr_in;
             int *opt = new int(1);
@@ -164,7 +169,7 @@ namespace gsocket
 
             addr->sin_family = this->domain;
             addr->sin_port = htons(port);
-            if (inet_pton(this->domain, &interface_addr[0], &addr->sin_addr.s_addr) <= 0)
+            if (inet_pton(this->domain, &iface[0], &addr->sin_addr.s_addr) <= 0)
             {
                 throw CustomExceptions("\nInvalid / unsupported ip address\n");
             };
@@ -181,7 +186,7 @@ namespace gsocket
             delete opt;
         }
 
-        void bind(str_view interface_addr, int &port)
+        int bind(str_view iface, int &port)
         {
             sockaddr_in *addr = new sockaddr_in;
             int *opt = new int(1);
@@ -195,9 +200,12 @@ namespace gsocket
 
             addr->sin_family = this->domain;
             addr->sin_port = htons(port);
-            if (inet_pton(this->domain, &interface_addr[0], &addr->sin_addr.s_addr) <= 0)
+            if (inet_pton(this->domain, &iface[0], &addr->sin_addr.s_addr) <= 0)
             {
-                throw CustomExceptions("\nInvalid / unsupported ip address\n");
+                if(GSOCKET_EXCEPTIONS){
+                    throw CustomExceptions("\nInvalid / unsupported ip address\n");
+                }
+                return 1;
             };
             //addr->sin_addr.s_addr = INADDR_ANY;
 
@@ -255,7 +263,7 @@ namespace gsocket
             sockaddr_in *addr = new sockaddr_in;
             addr->sin_family = AF_INET;
             addr->sin_port = htons(port);
-
+            
             // Check address and assign it to host struct
             if (inet_pton(AF_INET, &host[0], &addr->sin_addr) <= 0)
             {
@@ -265,11 +273,11 @@ namespace gsocket
             // Attempt connecting to host
             if(::connect(this->sock, (sockaddr *)addr, sizeof(*addr)))
             {
-                return 0;
+                return 1;
             }
 
             delete addr;
-            return 1;
+            return 0;
         }
         
         int connect(str_view host, const int &port)
@@ -296,14 +304,14 @@ namespace gsocket
 
         //Sends data through socket
         
-        int send(str_view data)
+        int send(str_view data, s_protocol p = s_protocol::block)
         {
-            return ::send(this->sock, &data[0], data.size(), 0);
+            return ::send(this->sock, &data[0], data.size(), static_cast<int>(p));
         }
         
         //Sends n bytes of data through socket
          
-        int send(str_view data, int &n)
+        int send(str_view data, int &n, s_protocol p = s_protocol::block)
         {
             return ::send(this->sock, &data[0], n, 0);
         }
@@ -368,17 +376,17 @@ namespace gsocket
         }
 
         // Returns n bytes of data from socket
-        str recv(int &n)
+        str recv(int &bytes)
         {
-            str data(n,'\x00');
-            ::recv(this->sock, &data[0], n, 0);
+            str data(bytes,'\x00');
+            ::recv(this->sock, &data[0], bytes, 0);
             return data;
         }
 
-        str recv(int &&n)
+        str recv(int &&bytes)
         {
-            str data(n,'\x00');
-            ::recv(this->sock, &data[0], n, 0);
+            str data(bytes,'\x00');
+            ::recv(this->sock, &data[0], bytes, 0);
             return data;
         }
 
