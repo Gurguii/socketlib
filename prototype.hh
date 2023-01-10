@@ -7,22 +7,26 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <string>
-#include <typeinfo>
 
 constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
 
-namespace sock_types
+enum struct s_domains : uint8_t
 {
-    constexpr int tcp = 0;
-    constexpr int udp = 1;
-}
+    local = 1, // AF_LOCAL == AF_UNIX
+    inet = 2 // AF_INET
+};
 
-namespace sock_behaviour
+enum struct s_types : uint8_t
+{   
+    tcp = 1, // SOCK_STREAM
+    udp = 2 // SOCK_DGRAM
+};
+
+enum struct s_protocol : uint8_t
 {
-    constexpr int block = 0;
-    constexpr int noblock = 1;
-}
-
+    block = 0, // BLOCKING FILE DESCRIPTOR
+    noblock = 1 // NONBLOCKING FILE DESCRIPTOR
+};
 
 namespace gsocket
 {
@@ -40,25 +44,7 @@ namespace gsocket
         }
     };
 
-    struct send
-    {
-        template <typename T> send(str_view data, T &obj)
-        {
-            ::send(obj.sock, &data[0], data.size(), 0);      
-        } 
-        template <typename T> send(str_view data, int &bytes, T &obj)
-        {
-            printf("2\n");
-            printf("%i : %i : %i\n", obj.domain, obj.type, obj.protocol);
-        }
-        template <typename T> send(str_view data, int &&bytes, T&obj)
-        {
-            printf("3\n");
-            printf("%i : %i : %i\n", obj.domain, obj.type, obj.protocol);
-        }
-    };
-
-    class __sw // POSIX socket wrapper
+    class __sw // POSIX socket methods wrapper
     {
         protected:
 
@@ -84,8 +70,6 @@ namespace gsocket
             return ::accept(this->sock, (sockaddr *)&newsock, (socklen_t *)&addrlen);
         }
 
-
-        
         public:
         int sock, domain, type, protocol;
 
@@ -93,26 +77,26 @@ namespace gsocket
         {
             ::close(this->sock);
         }
-
-
-
+        
         std::pair<char*, int> getsockname()
         {
+            // Returns std::pair containing socket's ip and port 
             sockaddr_in s;
             int slen = sizeof(s);
             ::getsockname(this->sock, (sockaddr*)&s, (socklen_t*)&slen);
             return {inet_ntoa(s.sin_addr), htons(s.sin_port)};
         }
-
+        //
         std::pair<char*, int> getpeername()
         {
+            // Returns std::pair containing socket peer's ip and port
             sockaddr_in s;
             int addrl = sizeof(s);
             ::getpeername(this->sock, (sockaddr *)&s, (socklen_t *)&addrl);
             return {inet_ntoa(s.sin_addr), htons(s.sin_port)};
         }
 
-        void bind(int port)
+        void bind(int &port)
         {   
             sockaddr_in *addr = new sockaddr_in;
             int *opt = new int(1);
@@ -139,7 +123,65 @@ namespace gsocket
             delete opt;
         }
 
-        void bind(int port, str_view interface_addr)
+        void bind(int &&port)
+        {   
+            sockaddr_in *addr = new sockaddr_in;
+            int *opt = new int(1);
+
+            if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, opt, sizeof(*opt)))
+            {
+                str msg(100, '\x00');
+                sprintf(&msg[0], "\nCan't set socket\n", port);
+                throw CustomExceptions(msg);
+            }
+
+            addr->sin_family = this->domain;
+            addr->sin_port = htons(port);
+            addr->sin_addr.s_addr = INADDR_ANY;
+
+            if(::bind(this->sock, (sockaddr *)addr, sizeof(*addr)) < 0)
+            {
+                str msg(100, '\x00');
+                sprintf(&msg[0], "\nCan't bind to port %i\n", port);
+                throw CustomExceptions(msg);
+            }
+
+            delete addr;
+            delete opt;
+        }
+
+        void bind(str_view interface_addr, int &&port)
+        {
+            sockaddr_in *addr = new sockaddr_in;
+            int *opt = new int(1);
+
+            if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, opt, sizeof(*opt)))
+            {
+                str msg(100, '\x00');
+                sprintf(&msg[0], "\nCan't set socket\n", port);
+                throw CustomExceptions(msg);
+            }
+
+            addr->sin_family = this->domain;
+            addr->sin_port = htons(port);
+            if (inet_pton(this->domain, &interface_addr[0], &addr->sin_addr.s_addr) <= 0)
+            {
+                throw CustomExceptions("\nInvalid / unsupported ip address\n");
+            };
+            //addr->sin_addr.s_addr = INADDR_ANY;
+
+            if(::bind(this->sock, (sockaddr *)addr, sizeof(*addr)) < 0)
+            {
+                str msg(100, '\x00');
+                sprintf(&msg[0], "\nCan't bind to port %i\n", port);
+                throw CustomExceptions(msg);
+            }
+
+            delete addr;
+            delete opt;
+        }
+
+        void bind(str_view interface_addr, int &port)
         {
             sockaddr_in *addr = new sockaddr_in;
             int *opt = new int(1);
@@ -180,12 +222,13 @@ namespace gsocket
                 throw CustomExceptions("\nSocket couldn't start listening\n");
             }
         }
-    
+
+        
         /*  
-        On connection-oriented sockets (TCP) it tries to connect to host:port
-        On connectionless sockets (UDP) it sets default host:port for further send() calls(faster than constantly calling sendto())
+            Connection-oriented sockets (TCP) it tries to connect to host:port
+            Connectionless sockets (UDP) it sets default host:port for further send() calls(faster than constantly calling sendto())
         */
-        int connect(str_view host,  int port)
+        int connect(str_view host,  int &port)
         {
             sockaddr_in *addr = new sockaddr_in;
             addr->sin_family = AF_INET;
@@ -207,15 +250,58 @@ namespace gsocket
             return 1;
         }
 
-        /*
-            Sends data through socket
+        int connect(str_view host, int &&port)
+        {
+            sockaddr_in *addr = new sockaddr_in;
+            addr->sin_family = AF_INET;
+            addr->sin_port = htons(port);
+
+            // Check address and assign it to host struct
+            if (inet_pton(AF_INET, &host[0], &addr->sin_addr) <= 0)
+            {
+                throw CustomExceptions("\nInvalid / unsupported ip address\n");
+            }
+
+            // Attempt connecting to host
+            if(::connect(this->sock, (sockaddr *)addr, sizeof(*addr)))
+            {
+                return 0;
+            }
+
+            delete addr;
+            return 1;
+        }
+        
+        int connect(str_view host, const int &port)
+        {
+            sockaddr_in *addr = new sockaddr_in;
+            addr->sin_family = AF_INET;
+            addr->sin_port = htons(port);
+
+            // Check address and assign it to host struct
+            if (inet_pton(AF_INET, &host[0], &addr->sin_addr) <= 0)
+            {
+                throw CustomExceptions("\nInvalid / unsupported ip address\n");
+            }
+
+            // Attempt connecting to host
+            if(::connect(this->sock, (sockaddr *)addr, sizeof(*addr)))
+            {
+                return 0;
+            }
+
+            delete addr;
+            return 1;
+        }
+
+        //Sends data through socket
         
         int send(str_view data)
         {
             return ::send(this->sock, &data[0], data.size(), 0);
         }
-        /*
-            Sends n bytes of data through socket
+        
+        //Sends n bytes of data through socket
          
         int send(str_view data, int &n)
         {
@@ -227,9 +313,7 @@ namespace gsocket
             return ::send(this->sock, &data[0], n, 0);
         }
 
-        /*
-            Read data from socket
-        */
+        //Read data from socket
         str read()
         {
             str data;
@@ -248,23 +332,22 @@ namespace gsocket
             return data;
         }
 
-        /*
-            Read n bytes of data from socket
-        */
-        str read(int &bytes)
+        // Read n bytes of data from socket
+        str read(int &n)
         {
             str buffer(BUFF_SIZE, '\x00');
-            ::read(this->sock, &buffer[0], bytes);
+            ::read(this->sock, &buffer[0], n);
             return buffer;
         }
 
-        str read(int &&bytes)
+        str read(int &&n)
         {
             str buffer(BUFF_SIZE, '\x00');
-            ::read(this->sock, &buffer[0], bytes);
+            ::read(this->sock, &buffer[0], n);
             return buffer;
         }
-        // Returns all data available in socket
+
+        // Returns data from socket
         str recv()
         {
             str data;
@@ -284,33 +367,21 @@ namespace gsocket
             return data;
         }
 
-        struct recv
-        {
-            recv(int &bytes)
-            {
-                
-            }
-            recv(int &&bytes)
-            {
-                
-            }
-        };
-
         // Returns n bytes of data from socket
-        //str recv(int &bytes)
-        //{
-        //    str data(bytes,'\x00');
-        //    ::recv(this->sock, &data[0], bytes, 0);
-        //    return data;
-        //}
-//
-        //str recv(int &&bytes)
-        //{
-        //    str data(bytes,'\x00');
-        //    ::recv(this->sock, &data[0], bytes, 0);
-        //    return data;
-        //}
-    
+        str recv(int &n)
+        {
+            str data(n,'\x00');
+            ::recv(this->sock, &data[0], n, 0);
+            return data;
+        }
+
+        str recv(int &&n)
+        {
+            str data(n,'\x00');
+            ::recv(this->sock, &data[0], n, 0);
+            return data;
+        }
+
         // Send 'data' to 'host' on 'port', returns bytes sent
         int sendto(str_view host, int port, str_view data)
         {
@@ -358,8 +429,8 @@ namespace gsocket
         }
 
         public:
-        tcp_socket()
-        :__sw(AF_INET, SOCK_STREAM, 0)
+        tcp_socket(s_protocol p = s_protocol::block)
+        :__sw(AF_INET, (p == s_protocol::block ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
         {
             // Default constructor
         }
@@ -401,69 +472,56 @@ namespace gsocket
     class udp_socket : public __sw
     {
         public:
-        udp_socket()
-        :__sw(AF_INET, SOCK_DGRAM, 0)
+        udp_socket(s_protocol p = s_protocol::block)
+        :__sw(AF_INET, (p == s_protocol::block ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
         {
             // Default constructor
-            if(sock)
-            {
-                this->sock = sock;
-            }
         };
         
-        
+        // Bind socket to port
         udp_socket(int &port)
         :__sw(AF_INET, SOCK_DGRAM, 0)
         {
-            // Bind socket to 'port'
+            
             __sw::bind(port);
         }
         
         udp_socket(int &&port)
         :__sw(AF_INET, SOCK_DGRAM, 0)
         {
-            // Bind socket to 'port'
+            
             __sw::bind(port);
         }
 
+        // Set default host, port for future send() calls
         udp_socket(str_view host, int &port)
         :__sw(AF_INET, SOCK_DGRAM, 0)
         {
-            // Set default host, port for send() calls
             __sw::connect(host, port);
         }
 
         udp_socket(str_view host, int &&port)
         :__sw(AF_INET, SOCK_DGRAM, 0)
         {
-            // Set default host, port for send() calls
-            printf("port rvalue\n");
             __sw::connect(host, port);
         }
-
+        
         udp_socket(str_view host, const int &port)
         :__sw(AF_INET, SOCK_DGRAM, 0)
         {
-            // Set default host, port for send() calls
             __sw::connect(host, port);
         }
+        
     };
-
-
     /* 
         Returns 2 AF_LOCAL sockets (tcp/udp) wrapped with gsocket::socket() class 
-        https://man7.org/linux/man-pages/man2/socketpair.2.html
+        POSIX socketpair - https://man7.org/linux/man-pages/man2/socketpair.2.html
         socket domains & types - https://man7.org/linux/man-pages/man2/socket.2.html
     */
-    std::pair<gsocket::socket, gsocket::socket> getsocketpair(int type)
+    std::pair<gsocket::socket, gsocket::socket> getsocketpair(s_types type)
     {   
-        if(type != sock_types::tcp && type != sock_types::udp)
-        {
-            throw CustomExceptions("Socketpair type must be tcp/udp\n");
-        }
-
         std::pair<int, int>fds;
-        if(::socketpair(AF_LOCAL, (type == sock_types::tcp ? SOCK_STREAM : SOCK_DGRAM), 0, &fds.first))
+        if(::socketpair(AF_LOCAL, static_cast<int>(type), 0, &fds.first))
         {
             throw CustomExceptions("Couldn't create socketpair");
         }
