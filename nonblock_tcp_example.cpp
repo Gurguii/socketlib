@@ -12,5 +12,4 @@ int main()
         continue;
     }
     printf("connected\n");
-    s1.send("hiii\n");
 }

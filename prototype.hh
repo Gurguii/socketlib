@@ -8,9 +8,11 @@
 #include <arpa/inet.h>
 #include <string>
 #include <errno.h>
+#include <ifaddrs.h>
 
 constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
 constexpr bool GSOCKET_EXCEPTIONS = false; 
+
 
 enum struct s_domains : uint8_t
 {
@@ -34,6 +36,25 @@ namespace gsocket
     using str = std::string;
     using str_view = std::string_view;
 
+    void getIpByIface(const char *ifa)
+    {
+        ifaddrs *addrs = nullptr;
+        getifaddrs(&addrs);
+
+        str iface(INET_ADDRSTRLEN, '\x00');
+        for(auto a = addrs ; a!=nullptr; a = a->ifa_next)
+        {
+            if(a->ifa_addr->sa_family == AF_INET)
+            {
+                if(!strcmp(ifa, a->ifa_name))
+                {
+                    inet_ntop(a->ifa_addr->sa_family, &((sockaddr_in*)(a->ifa_addr))->sin_addr, &iface[0], INET_ADDRSTRLEN);
+                    printf("[%s] - %s\n", ifa, iface.c_str());
+                }
+            }
+        }
+    }
+
     class CustomExceptions : public std::exception{
         private:
         std::string message;
@@ -47,6 +68,9 @@ namespace gsocket
 
     class __sw // POSIX socket methods wrapper
     {
+        public:
+        const char *error;
+
         protected:
 
         __sw(int domain, int type, int protocol)
@@ -96,20 +120,17 @@ namespace gsocket
             ::getpeername(this->sock, (sockaddr *)&s, (socklen_t *)&addrl);
             return {inet_ntoa(s.sin_addr), htons(s.sin_port)};
         }
-        /*
-            TODO: allow inputting interfaces name (eth0, lo, etc...) // check if iface input contains '.' ?
-        */
+
         // Bind to port ready to listen in any address(interfaces)
-        void bind(int &port)
-        {   
+        template <typename T> bool bind(T port)
+        {
             sockaddr_in *addr = new sockaddr_in;
             int *opt = new int(1);
 
             if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, opt, sizeof(*opt)))
             {
-                str msg(100, '\x00');
-                sprintf(&msg[0], "\nCan't set socket\n", port);
-                throw CustomExceptions(msg);
+                this->error="Can't set socket";
+                return true;
             }
 
             addr->sin_family = this->domain;
@@ -118,105 +139,55 @@ namespace gsocket
 
             if(::bind(this->sock, (sockaddr *)addr, sizeof(*addr)) < 0)
             {
-                str msg(100, '\x00');
-                sprintf(&msg[0], "\nCan't bind to port %i\n", port);
-                throw CustomExceptions(msg);
+                this->error="Can't bind to port ";
+                return true;
             }
 
             delete addr;
             delete opt;
-        }
-        void bind(int &&port)
-        {   
-            sockaddr_in *addr = new sockaddr_in;
-            int *opt = new int(1);
-
-            if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, opt, sizeof(*opt)))
-            {
-                str msg(100, '\x00');
-                sprintf(&msg[0], "\nCan't set socket\n", port);
-                throw CustomExceptions(msg);
-            }
-
-            addr->sin_family = this->domain;
-            addr->sin_port = htons(port);
-            addr->sin_addr.s_addr = INADDR_ANY;
-
-            if(::bind(this->sock, (sockaddr *)addr, sizeof(*addr)) < 0)
-            {
-                str msg(100, '\x00');
-                sprintf(&msg[0], "\nCan't bind to port %i\n", port);
-                throw CustomExceptions(msg);
-            }
-
-            delete addr;
-            delete opt;
+            return false;
         }
 
-        // Bind to port and readyto listen in given addr
-        void bind(str_view iface, int &&port)
+        template <typename T> bool bind(str_view iface, T port)
         {
-            sockaddr_in *addr = new sockaddr_in;
-            int *opt = new int(1);
-
-            if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, opt, sizeof(*opt)))
+            for(char c : iface)
             {
-                str msg(100, '\x00');
-                sprintf(&msg[0], "\nCan't set socket\n", port);
-                throw CustomExceptions(msg);
-            }
-
-            addr->sin_family = this->domain;
-            addr->sin_port = htons(port);
-            if (inet_pton(this->domain, &iface[0], &addr->sin_addr.s_addr) <= 0)
-            {
-                throw CustomExceptions("\nInvalid / unsupported ip address\n");
-            };
-            //addr->sin_addr.s_addr = INADDR_ANY;
-
-            if(::bind(this->sock, (sockaddr *)addr, sizeof(*addr)) < 0)
-            {
-                str msg(100, '\x00');
-                sprintf(&msg[0], "\nCan't bind to port %i\n", port);
-                throw CustomExceptions(msg);
-            }
-
-            delete addr;
-            delete opt;
-        }
-
-        int bind(str_view iface, int &port)
-        {
-            sockaddr_in *addr = new sockaddr_in;
-            int *opt = new int(1);
-
-            if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, opt, sizeof(*opt)))
-            {
-                str msg(100, '\x00');
-                sprintf(&msg[0], "\nCan't set socket\n", port);
-                throw CustomExceptions(msg);
-            }
-
-            addr->sin_family = this->domain;
-            addr->sin_port = htons(port);
-            if (inet_pton(this->domain, &iface[0], &addr->sin_addr.s_addr) <= 0)
-            {
-                if(GSOCKET_EXCEPTIONS){
-                    throw CustomExceptions("\nInvalid / unsupported ip address\n");
+                if((c < 48) || (c > 57) && (c != '.'))
+                {
+                    // Find interfaces
+                    iface = getIpByIface(static_cast<const char*>(iface.data()));
                 }
-                return 1;
-            };
-            //addr->sin_addr.s_addr = INADDR_ANY;
+            }
+   
+            return true;
 
+            sockaddr_in *addr = new sockaddr_in;
+            int *opt = new int(1);
+            
+            if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, opt, sizeof(*opt)))
+            {
+                this->error = "Can't set socket";
+                return true;
+            }
+
+            addr->sin_family = this->domain;
+            addr->sin_port = htons(port);
+            
+            if (inet_pton(this->domain, &iface[0], &addr->sin_addr.s_addr) < 0)
+            {
+                this->error = "Invalid / unsupported ip address";
+                return true;
+            };
+            
             if(::bind(this->sock, (sockaddr *)addr, sizeof(*addr)) < 0)
             {
-                str msg(100, '\x00');
-                sprintf(&msg[0], "\nCan't bind to port %i\n", port);
-                throw CustomExceptions(msg);
+                this->error = "Can't bind to port";
+                return true;
             }
 
             delete addr;
             delete opt;
+            return false;  
         }
         /*
         Start listening so connections can be accepted
@@ -230,56 +201,11 @@ namespace gsocket
             }
         }
 
-        
         /*  
             Connection-oriented sockets (TCP) it tries to connect to host:port
             Connectionless sockets (UDP) it sets default host:port for further send() calls(faster than constantly calling sendto())
         */
-        int connect(str_view host,  int &port)
-        {
-            sockaddr_in *addr = new sockaddr_in;
-            addr->sin_family = AF_INET;
-            addr->sin_port = htons(port);
-
-            // Check address and assign it to host struct
-            if (inet_pton(AF_INET, &host[0], &addr->sin_addr) <= 0)
-            {
-                throw CustomExceptions("\nInvalid / unsupported ip address\n");
-            }
-
-            // Attempt connecting to host
-            if(::connect(this->sock, (sockaddr *)addr, sizeof(*addr)))
-            {
-                return 0;
-            }
-
-            delete addr;
-            return 1;
-        }
-
-        int connect(str_view host, int &&port)
-        {
-            sockaddr_in *addr = new sockaddr_in;
-            addr->sin_family = AF_INET;
-            addr->sin_port = htons(port);
-            
-            // Check address and assign it to host struct
-            if (inet_pton(AF_INET, &host[0], &addr->sin_addr) <= 0)
-            {
-                throw CustomExceptions("\nInvalid / unsupported ip address\n");
-            }
-
-            // Attempt connecting to host
-            if(::connect(this->sock, (sockaddr *)addr, sizeof(*addr)))
-            {
-                return 1;
-            }
-
-            delete addr;
-            return 0;
-        }
-        
-        int connect(str_view host, const int &port)
+        template <typename T> bool connect(str_view host, T port)
         {
             sockaddr_in *addr = new sockaddr_in;
             addr->sin_family = AF_INET;
@@ -302,7 +228,6 @@ namespace gsocket
         }
 
         //Sends data through socket
-        
         int send(str_view data, s_protocol p = s_protocol::block)
         {
             return ::send(this->sock, &data[0], data.size(), static_cast<int>(p));
@@ -312,14 +237,14 @@ namespace gsocket
          
         int send(str_view data, int &n, s_protocol p = s_protocol::block)
         {
-            return ::send(this->sock, &data[0], n, 0);
+            return ::send(this->sock, &data[0], n, static_cast<int>(p));
         }
 
-        int send(str_view data, int &&n)
+        int send(str_view data, int &&n, s_protocol p = s_protocol::block)
         {
-            return ::send(this->sock, &data[0], n, 0);
+            return ::send(this->sock, &data[0], n, static_cast<int>(p));
         }
-
+        
         //Read data from socket
         str read()
         {
