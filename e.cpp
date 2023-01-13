@@ -1,32 +1,12 @@
 #include <iostream>
-
-struct user
-{
-    const char *name;
-    int id;
-
-    user(const char *name, int id)
-    {
-        this->name = name;
-        this->id = id;
-    }
-
-    void hello()
-    {
-        std::cout << "Hello world\n";
-    }
-    protected:
-    void hi()
-    {
-        printf("hello world\n");
-    }
-};
-
-void t(user **u)
-{
-    **u = user("gurgui", 1);
-};
+#include "prototype.hh"
 
 int main()
 {
+    gsocket::udp_socket s;
+    for(const int &i : {1,2,3})
+    {
+        s.sendto("127.0.0.1", 8080, "hellouuuu");
+    }
+    
 }
