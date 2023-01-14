@@ -1,12 +1,15 @@
 #include <iostream>
 #include "prototype.hh"
 
+using str = std::string;
+
 int main()
 {
-    gsocket::udp_socket s;
-    for(const int &i : {1,2,3})
+    gsocket::udp_socket sv;
+    sv.bind(8080);
+    str data;
+    while((data = sv.recv()).size())
     {
-        s.sendto("127.0.0.1", 8080, "hellouuuu");
+        printf("received: %s\n", &data[0]);
     }
-    
-}
+} 

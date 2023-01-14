@@ -4,7 +4,7 @@ using str = std::string;
 
 int main()
 {
-    gsocket::tcp_server sv("192.168.1.99",8080);
+    gsocket::tcp_server sv("127.0.0.1",8080);
     str data;
     printf("listening %s : %i\n", sv.getsockname());
     while(1)
@@ -15,6 +15,7 @@ int main()
         {
             printf("Received: %s\n", &data[0]); 
         }
+        printf("connection closed\n");
         client.close();
     }
 }   
