@@ -1,21 +1,26 @@
 #ifndef GSOCKETS
 #define GSOCKETS
 
+#include <string.h>
 #include <cstring>
-#include <cstdio>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <string>
-#include <errno.h>
 #include <ifaddrs.h>
-
-constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
+#include <errno.h> // NOT IN USE
 
 #define __tcp_block_sock socket(AF_INET, SOCK_STREAM, 0)
 #define __tcp_noblock_sock socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0)
 #define __udp_block_sock socket(AF_INET, SOCK_DGRAM, 0)
 #define __udp_noblock_sock socket(AF_INET, (SOCK_DGRAM | SOCK_NONBLOCK), 0)
+
+constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
+/*
+    Some recv() flags:
+    
+    MSG_WAITFORONE - wait for at least one packet to return
+*/
 
 enum struct s_domains : uint8_t
 {
@@ -25,6 +30,8 @@ enum struct s_domains : uint8_t
     #define INET s_domains::inet
 };
 
+// defines possible sock types
+// when calling gsocket::getsocketpair()
 enum struct s_types : uint8_t
 {   
     tcp = 1, // SOCK_STREAM
@@ -34,12 +41,12 @@ enum struct s_types : uint8_t
     
 };
 
-enum struct s_protocol : uint8_t
+enum struct socket_behaviour : uint8_t
 {
-    block = 1, // BLOCKING FILE DESCRIPTOR or OPERATION
-    #define BLOCK s_protocol::block
-    noblock = 0 // NONBLOCKING FILE DESCRIPTOR or OPERATION
-    #define NOBLOCK s_protocol::noblock
+    block = 1, // BLOCKING FILE DESCRIPTOR
+    #define BLOCK socket_behaviour::block
+    noblock = 0 // NONBLOCKING FILE DESCRIPTOR
+    #define NOBLOCK socket_behaviour::noblock
 };
 
 namespace gsocket
@@ -120,6 +127,8 @@ namespace gsocket
             ::close(this->sock);
         }
         
+        // idk if this is worth, the idea is to avoid constructing a new obj and just
+        // closing and creating a new sock on the already existing obj
         void reset()
         {
             ::close(this->sock);
@@ -152,7 +161,6 @@ namespace gsocket
 
             if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
             {
-                this->error="Can't set socket";
                 return true;
             }
 
@@ -162,7 +170,6 @@ namespace gsocket
 
             if(::bind(this->sock, (sockaddr *)&addr, sizeof(addr)) < 0)
             {
-                this->error="Can't bind to port ";
                 return 1;
             }
             return 0;
@@ -196,8 +203,7 @@ namespace gsocket
             
             if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
             {
-                this->error = "Can't set socket";
-                return 1;
+                throw CustomExceptions("Couldn't set socket");
             }
 
             addr.sin_family = this->domain;
@@ -205,14 +211,13 @@ namespace gsocket
             
             if (inet_pton(this->domain, &inet_iface[0], &addr.sin_addr.s_addr) < 0)
             {
-                this->error = "Invalid / unsupported ip address";
-                return 1;
+                
+                throw CustomExceptions("Invalid / unsupported Ipv4 address");
             };
             
             if(::bind(this->sock, (sockaddr *)&addr, sizeof(addr)) < 0)
             {
-                this->error = "Couldn't bind to port";
-                return 1;
+                throw CustomExceptions("Couldn't bind to port");
             }
 
             return 0;  
@@ -221,14 +226,10 @@ namespace gsocket
         Start listening so connections can be accepted
         __maxconns: max amount of connections to queue before refusing
         */
-        void listen(int maxconns = 3)
+        int listen(int maxconns = 3)
         {
-            if(::listen(this->sock, maxconns) < 0)
-            {
-                throw CustomExceptions("\nSocket couldn't start listening\n");
-            }
+            return ::listen(this->sock, maxconns);
         }
-
         /*  
             Connection-oriented sockets (TCP) it tries to connect to host:port
             Connectionless sockets (UDP) it sets default host:port for further send() calls(faster than constantly calling sendto())
@@ -255,16 +256,16 @@ namespace gsocket
 
         // Sends data through socket
         // returns bytes sent
-        int send(str_view data, s_protocol p = BLOCK)
+        int send(str_view data)
         {
-            return ::send(this->sock, &data[0], data.size(), static_cast<int>(p));
+            return ::send(this->sock, &data[0], data.size(), 0);
         }
 
         // Sends N bytes of data through socket
         // returns bytes sent
-        int send(str_view data, int N, s_protocol p = BLOCK)
+        int send(str_view data, int N)
         {
-            return ::send(this->sock, &data[0], N, static_cast<int>(p));
+            return ::send(this->sock, &data[0], N, 0);
         }
         
         // Read data from socket
@@ -353,7 +354,7 @@ namespace gsocket
         {}
 
         // NOTE -> gsocket::socket(AF_INET, SOCK_STREAM, 0) == SAME AS == gsocket::socket(INET, TCP, BLOCK);
-        socket(s_domains domain, s_types type, s_protocol protocol)
+        socket(s_domains domain, s_types type, socket_behaviour protocol)
         :__sw(static_cast<int>(domain), (protocol == BLOCK ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0)
         {}
     };
@@ -361,7 +362,7 @@ namespace gsocket
     class tcp_socket : public __sw
     {
         public:
-        tcp_socket(s_protocol p = BLOCK)
+        tcp_socket(socket_behaviour p = BLOCK)
         :__sw(AF_INET, (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
         {
             // default constructor
@@ -372,29 +373,46 @@ namespace gsocket
             return __sw::accept();
         }
     };
-
+    
     class tcp_client : public __sw
     {
+        protected:
+        int __connected = 0;
+
         public:
-        tcp_client(str_view host, int port, s_protocol p = BLOCK)
+        
+        tcp_client(str_view host, int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
         {
-            __sw::connect(host, port);
+            this->__connected = !__sw::connect(host, port);
+        }
+
+        int connected()
+        {
+            return this->__connected;
         }
     };
 
     class tcp_server : public __sw
     {
+        protected:
+        int __status = 1;
 
         public:
-        tcp_server(str_view addr_iface, int port, int maxconns = 3, s_protocol p = BLOCK)
+        tcp_server(str_view addr_iface, int port, int maxconns = 3, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
         {
-            __sw::bind(addr_iface, port);
-            __sw::listen(maxconns);
+            if(__sw::bind(addr_iface, port))
+            {
+                this->__status = 0;
+            };
+            if(__sw::listen(maxconns))
+            {
+                this->__status = 0;
+            };
         }
 
-        tcp_server(int port, int maxconns = 3, s_protocol p = BLOCK)
+        tcp_server(int port, int maxconns = 3, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
         {
             __sw::bind(port);
@@ -405,22 +423,27 @@ namespace gsocket
         {
             return __sw::accept();
         }
+
+        int up()
+        {
+            return this->__status;
+        }
     };
 
     class udp_socket : public __sw
     {
         public:
-        udp_socket(s_protocol p = BLOCK)
+        udp_socket(socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {}
     };
 
-
+    
     class udp_client : public __sw
     {
         public:
         // set default host port for future send() calls
-        udp_client(str_view host, int port, s_protocol p = BLOCK)
+        udp_client(str_view host, int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {
             __sw::connect(host, port);
@@ -429,29 +452,46 @@ namespace gsocket
 
     class udp_server : public __sw
     {
+        protected:
+        int __binded = 0;
+
         public:
-        udp_server(str_view addr_iface, int port, s_protocol p = BLOCK)
+        // bind to port and listen in given address/iface
+        udp_server(str_view addr_iface, int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {
-            __sw::bind(addr_iface, port);
+            if(!__sw::bind(addr_iface, port))
+            {
+                this->__binded = 1;
+            };
+            
         }
 
-        udp_server(int port, s_protocol p = BLOCK)
+        // bind to port and listen in any local address
+        udp_server(int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {
-            __sw::bind(port);
+            if(!__sw::bind(port))
+            {
+                this->__binded = 1;
+            };
+        }
+
+        int up()
+        {
+            return this->__binded;
         }
     };
 
     /* 
         Returns 2 AF_LOCAL sockets (tcp/udp) wrapped with gsocket::socket() class 
-        POSIX socketpair - https://man7.org/linux/man-pages/man2/socketpair.2.html
+        socketpair (CHECK NOTES) - https://man7.org/linux/man-pages/man2/socketpair.2.html
         socket domains & types - https://man7.org/linux/man-pages/man2/socket.2.html
     */
-    std::pair<gsocket::socket, gsocket::socket> getsocketpair(s_types type)
+    std::pair<gsocket::socket, gsocket::socket> getsocketpair(s_types type, socket_behaviour b = BLOCK)
     {   
         std::pair<int, int>fds;
-        if(::socketpair(AF_LOCAL, static_cast<int>(type), 0, &fds.first))
+        if(::socketpair(AF_LOCAL, (static_cast<int>(b) ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0, &fds.first))
         {
             throw CustomExceptions("Couldn't create socketpair");
         }
