@@ -5,7 +5,7 @@ using str = std::string;
 int main()
 {
     gsocket::udp_server s(8080);
-    if(!s.up())
+    if(!s.binded())
     {
         printf("Couldn't bind");
         return -1;

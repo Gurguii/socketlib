@@ -8,12 +8,14 @@
 #include <arpa/inet.h>
 #include <string>
 #include <ifaddrs.h>
+#include <netdb.h>
 #include <errno.h> // NOT IN USE
 
 #define __tcp_block_sock socket(AF_INET, SOCK_STREAM, 0)
 #define __tcp_noblock_sock socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0)
 #define __udp_block_sock socket(AF_INET, SOCK_DGRAM, 0)
 #define __udp_noblock_sock socket(AF_INET, (SOCK_DGRAM | SOCK_NONBLOCK), 0)
+
 #define _XOPEN_SOURCE_EXTENDED 1
 constexpr int BUFF_SIZE = 10; // read(), recv() default buffer size when reading
 /*
@@ -43,10 +45,10 @@ enum struct s_types : uint8_t
 
 enum struct socket_behaviour : uint8_t
 {
-    block = 1, // BLOCKING FILE DESCRIPTOR
-    #define BLOCK socket_behaviour::block
-    noblock = 0 // NONBLOCKING FILE DESCRIPTOR
+    noblock = 0, // NONBLOCKING FILE DESCRIPTOR
     #define NOBLOCK socket_behaviour::noblock
+    block = 1 // BLOCKING FILE DESCRIPTOR
+    #define BLOCK socket_behaviour::block
 };
 
 struct sock_data_
@@ -63,6 +65,19 @@ namespace gsocket
     using str = std::string;
     using str_view = std::string_view;
 
+    class CustomExceptions : public std::exception{
+        private:
+        std::string message;
+
+        public:
+        CustomExceptions(std::string msg)
+        :message(msg)
+        {}
+
+        std::string what(){
+            return message;
+        }
+    };
     // Returns ipv4 addr of interface E.g eth0, lo, docker0
     str getIpByIface(str_view ifa)
     {
@@ -85,19 +100,51 @@ namespace gsocket
         return iface;
     }
 
-    class CustomExceptions : public std::exception{
-        private:
-        std::string message;
+    // TODO: MAKE THIS USEFUL AND ADD getnameinfo()
+    addrinfo* getaddrinfo()
+    {
+        addrinfo *addrs = nullptr;
 
-        public:
-        CustomExceptions(std::string msg)
-        :message(msg)
-        {}
-
-        std::string what(){
-            return message;
+        if(::getaddrinfo("www.google.com",NULL,NULL,&addrs))
+        {
+            throw CustomExceptions("getaddrinfo failed\n");
         }
-    };
+
+        str addr(100, '\x00');
+        for(auto i = addrs; i!=nullptr; i = i->ai_next)
+        {
+            switch (i->ai_family)
+            {
+            case 2:
+                // ipv4
+                if(i->ai_socktype == SOCK_STREAM)
+                {
+                    printf("got tcp ipv4 sockaddr, returning it\n");
+                    freeaddrinfo(addrs);
+                    return i;
+                }
+
+                inet_ntop(i->ai_addr->sa_family, &((sockaddr_in*)(i->ai_addr))->sin_addr, &addr[0], INET_ADDRSTRLEN);
+                printf("ipv4 => %i : %s\n", i->ai_socktype, &addr[0]);
+                continue;
+            
+            case 10:
+                // ipv6
+                inet_ntop(i->ai_addr->sa_family, &((sockaddr_in*)(i->ai_addr))->sin_addr, &addr[0], INET6_ADDRSTRLEN);
+                printf("ipv6 => %i : %s\n", i->ai_socktype, &addr[0]);
+                continue;
+
+            default:
+                // smth weird
+                printf("default behaviour\n");
+                break;
+            }
+        }
+        return nullptr;
+        freeaddrinfo(addrs);
+    }
+
+
 
     class __sw // POSIX socket methods wrapper
     {
@@ -162,7 +209,7 @@ namespace gsocket
             return {inet_ntoa(s.sin_addr), htons(s.sin_port)};
         }
 
-        // Bind to port ready to listen in any address(interfaces)
+        // Bind to port ready to listen in any address
         int bind(int port)
         {
             sockaddr_in addr;
@@ -212,7 +259,7 @@ namespace gsocket
             
             if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
             {
-                throw CustomExceptions("Couldn't set socket");
+                throw CustomExceptions("Can't set socket");
             }
 
             addr.sin_family = this->domain;
@@ -226,7 +273,7 @@ namespace gsocket
             
             if(::bind(this->sock, (sockaddr *)&addr, sizeof(addr)) < 0)
             {
-                throw CustomExceptions("Couldn't bind to port");
+                throw CustomExceptions("Can't bind to port");
             }
 
             return 0;  
@@ -364,12 +411,13 @@ namespace gsocket
 
             return sock_data_{inet_ntoa(addr.sin_addr), htons(addr.sin_port), data};
         }
+
+
     };
 
     class socket : public __sw
     {
         public:
-
         // socket wrapper
         socket(int s)
         :__sw(s)
@@ -407,8 +455,7 @@ namespace gsocket
         private:
         int status = 0;
 
-        public:
-        
+        public:    
         tcp_client(str_view host, int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
         {
@@ -447,7 +494,6 @@ namespace gsocket
             {
                 this->__status = 0;
             };
-            
             if(__sw::listen(maxconns))
             {
                 this->__status = 0;
@@ -468,12 +514,13 @@ namespace gsocket
     class udp_socket : public __sw
     {
         public:
+        // socket_behaviour = BLOCK | NOBLOCK
+        // defines file descriptor default behaviour
         udp_socket(socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {}
     };
 
-    
     class udp_client : public __sw
     {
         public:
@@ -491,7 +538,11 @@ namespace gsocket
         int __status = 0;
 
         public:
-        // bind to port and listen in given address/iface
+        /*
+            bind to port and listen in given address/iface
+            if addr_iface is empty, 0.0.0.0 will be chosen,
+            meaning it will receive data from any local ipv4 address
+        */
         udp_server(str_view addr_iface, int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {
@@ -502,7 +553,7 @@ namespace gsocket
             
         }
 
-        // bind to port and listen in any local address
+        // bind to port and listen in any local ipv4 address
         udp_server(int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {
@@ -512,7 +563,7 @@ namespace gsocket
             };
         }
 
-        int up()
+        int binded()
         {
             return this->__status;
         }
