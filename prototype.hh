@@ -14,8 +14,8 @@
 #define __tcp_noblock_sock socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0)
 #define __udp_block_sock socket(AF_INET, SOCK_DGRAM, 0)
 #define __udp_noblock_sock socket(AF_INET, (SOCK_DGRAM | SOCK_NONBLOCK), 0)
-
-constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
+#define _XOPEN_SOURCE_EXTENDED 1
+constexpr int BUFF_SIZE = 10; // read(), recv() default buffer size when reading
 /*
     Some recv() flags:
     
@@ -49,8 +49,17 @@ enum struct socket_behaviour : uint8_t
     #define NOBLOCK socket_behaviour::noblock
 };
 
+struct sock_data_
+{
+    const char *host;
+    int port;
+    std::string msg;
+};
+
 namespace gsocket
 {
+
+
     using str = std::string;
     using str_view = std::string_view;
 
@@ -182,8 +191,8 @@ namespace gsocket
             // Check if iface is an address or iface name (E.g eth0);
             if(iface.empty())
             {
-                // all local ipv4 addresses
-                iface = "0.0.0.0";
+
+                iface = "0.0.0.0"; // all local ipv4 addresses
             }
             else
             {
@@ -241,7 +250,7 @@ namespace gsocket
             addr.sin_port = htons(port);
 
             // Check address and assign it to host struct
-            if (inet_pton(AF_INET, &host[0], &addr.sin_addr) <= 0)
+            if (inet_pton(this->domain, &host[0], &addr.sin_addr) <= 0)
             {
                 throw CustomExceptions("\nInvalid / unsupported ip address\n");
             }
@@ -336,6 +345,25 @@ namespace gsocket
 
             return n;
         }
+        /* 
+            Receive N bytes of data (default 1024) and return rhost, rport, and data received 
+            struct sock_data_{
+                const char *host;
+                int port;
+                const char *msg;
+            }
+        */
+        sock_data_ recvfrom(int N = BUFF_SIZE)
+        {
+            sockaddr_in addr;
+            int addrlen = sizeof(addr);
+
+            str data(BUFF_SIZE, '\x00');
+
+            ::recvfrom(this->sock, &data[0], N, 0, (sockaddr *)&addr, (socklen_t *)&addrlen);
+
+            return sock_data_{inet_ntoa(addr.sin_addr), htons(addr.sin_port), data};
+        }
     };
 
     class socket : public __sw
@@ -376,26 +404,26 @@ namespace gsocket
     
     class tcp_client : public __sw
     {
-        protected:
-        int __connected = 0;
+        private:
+        int status = 0;
 
         public:
         
         tcp_client(str_view host, int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
         {
-            this->__connected = !__sw::connect(host, port);
+            this->status = !__sw::connect(host, port);
         }
 
         int connected()
         {
-            return this->__connected;
+            return this->status;
         }
     };
 
     class tcp_server : public __sw
     {
-        protected:
+        private:
         int __status = 1;
 
         public:
@@ -415,8 +443,15 @@ namespace gsocket
         tcp_server(int port, int maxconns = 3, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
         {
-            __sw::bind(port);
-            __sw::listen(maxconns);
+            if(__sw::bind(port))
+            {
+                this->__status = 0;
+            };
+            
+            if(__sw::listen(maxconns))
+            {
+                this->__status = 0;
+            };
         }
 
         gsocket::socket accept_connection()
@@ -452,8 +487,8 @@ namespace gsocket
 
     class udp_server : public __sw
     {
-        protected:
-        int __binded = 0;
+        private:
+        int __status = 0;
 
         public:
         // bind to port and listen in given address/iface
@@ -462,7 +497,7 @@ namespace gsocket
         {
             if(!__sw::bind(addr_iface, port))
             {
-                this->__binded = 1;
+                this->__status = 1;
             };
             
         }
@@ -473,13 +508,13 @@ namespace gsocket
         {
             if(!__sw::bind(port))
             {
-                this->__binded = 1;
+                this->__status = 1;
             };
         }
 
         int up()
         {
-            return this->__binded;
+            return this->__status;
         }
     };
 
