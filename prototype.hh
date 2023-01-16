@@ -10,6 +10,7 @@
 #include <ifaddrs.h>
 #include <netdb.h>
 #include <errno.h> // NOT IN USE
+#include <iostream> // TEMP
 
 #define __tcp_block_sock socket(AF_INET, SOCK_STREAM, 0)
 #define __tcp_noblock_sock socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0)
@@ -24,22 +25,26 @@ constexpr int BUFF_SIZE = 10; // read(), recv() default buffer size when reading
     MSG_WAITFORONE - wait for at least one packet to return
 */
 
-enum struct s_domains : uint8_t
+enum struct s_family : uint8_t
 {
     local = 1, // AF_LOCAL == AF_UNIX
-    #define LOCAL s_domains::local
-    inet = 2 // AF_INET
-    #define INET s_domains::inet
+    #define LOCAL s_family::local
+    inet = 2, // tcp/ip protocol - ipv4 addr
+    #define INET s_family::inet
+    inet6 = 10 // tcp/ip protocol - ipv6 addr 
+    #define INET6 s_family::inet6
 };
 
 // defines possible sock types
 // when calling gsocket::getsocketpair()
-enum struct s_types : uint8_t
+enum struct s_type : uint8_t
 {   
+    any = 0,
+    #define ANY_TYPE s_type::any
     tcp = 1, // SOCK_STREAM
-    #define TCP s_types::tcp
+    #define TCP s_type::tcp
     udp = 2 // SOCK_DGRAM
-    #define UDP s_types::udp
+    #define UDP s_type::udp
     
 };
 
@@ -56,6 +61,14 @@ struct sock_data_
     const char *host;
     int port;
     std::string msg;
+};
+
+struct s_preferences
+{
+    s_family family; // TCP or UDP
+    s_type type; 
+    int protocol; //
+    int flags; // 
 };
 
 namespace gsocket
@@ -101,37 +114,47 @@ namespace gsocket
     }
 
     // TODO: MAKE THIS USEFUL AND ADD getnameinfo()
-    addrinfo* getaddrinfo()
+    addrinfo* getaddrinfo(str_view host, const char *service = NULL, s_preferences *hints = nullptr)
     {
         addrinfo *addrs = nullptr;
+    
+        addrinfo pref{
+            // required params
+            .ai_flags = hints->flags,
+            .ai_family = static_cast<int>(hints->family), 
+            .ai_socktype = static_cast<int>(hints->type),
+            .ai_protocol = hints->protocol,
+            // not required
+            .ai_addrlen = 0,
+            .ai_addr = nullptr,
+            .ai_canonname = nullptr,
+            .ai_next = nullptr
+        };
 
-        if(::getaddrinfo("www.google.com",NULL,NULL,&addrs))
+        if(::getaddrinfo(&host[0], service, &pref, &addrs))
         {
             throw CustomExceptions("getaddrinfo failed\n");
         }
 
-        str addr(100, '\x00');
+        return addrs;
+
+        str addr(46, '\x00'); // Ipv6 length so both Ipv4 & 6 fit
+
         for(auto i = addrs; i!=nullptr; i = i->ai_next)
         {
             switch (i->ai_family)
             {
             case 2:
                 // ipv4
-                if(i->ai_socktype == SOCK_STREAM)
-                {
-                    printf("got tcp ipv4 sockaddr, returning it\n");
-                    freeaddrinfo(addrs);
-                    return i;
-                }
-
                 inet_ntop(i->ai_addr->sa_family, &((sockaddr_in*)(i->ai_addr))->sin_addr, &addr[0], INET_ADDRSTRLEN);
-                printf("ipv4 => %i : %s\n", i->ai_socktype, &addr[0]);
+                //std::cout << i->ai_socktype << " : " << addr << " : " << i->ai_canonname << "\n";
+                printf("%i : %s : %s\n", i->ai_socktype, &addr[0], i->ai_canonname);
                 continue;
             
             case 10:
                 // ipv6
                 inet_ntop(i->ai_addr->sa_family, &((sockaddr_in*)(i->ai_addr))->sin_addr, &addr[0], INET6_ADDRSTRLEN);
-                printf("ipv6 => %i : %s\n", i->ai_socktype, &addr[0]);
+                printf("%i : %s\n", i->ai_socktype, &addr[0]);
                 continue;
 
             default:
@@ -140,8 +163,8 @@ namespace gsocket
                 break;
             }
         }
-        return nullptr;
         freeaddrinfo(addrs);
+        return nullptr;
     }
 
 
@@ -430,7 +453,7 @@ namespace gsocket
         {}
 
         // NOTE -> gsocket::socket(AF_INET, SOCK_STREAM, 0) == SAME AS == gsocket::socket(INET, TCP, BLOCK);
-        socket(s_domains domain, s_types type, socket_behaviour protocol)
+        socket(s_family domain, s_type type, socket_behaviour protocol)
         :__sw(static_cast<int>(domain), (protocol == BLOCK ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0)
         {}
     };
@@ -574,7 +597,7 @@ namespace gsocket
         socketpair (CHECK NOTES) - https://man7.org/linux/man-pages/man2/socketpair.2.html
         socket domains & types - https://man7.org/linux/man-pages/man2/socket.2.html
     */
-    std::pair<gsocket::socket, gsocket::socket> getsocketpair(s_types type, socket_behaviour b = BLOCK)
+    std::pair<gsocket::socket, gsocket::socket> getsocketpair(s_type type, socket_behaviour b = BLOCK)
     {   
         std::pair<int, int>fds;
         if(::socketpair(AF_LOCAL, (static_cast<int>(b) ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0, &fds.first))

@@ -2,11 +2,25 @@
 
 int main()
 {
-    gsocket::tcp_socket s(BLOCK);
-    std::string data;
-    printf("about to recv\n");
-    sleep(1);
-    data = s.recv();
-    printf("Got data: %s\n", &data[0]);
-    s.close();
+    s_preferences fav{
+        .family = INET,
+        .type = TCP,
+        .protocol = 0,
+        .flags = AI_CANONNAME
+    };
+
+    auto a = gsocket::getaddrinfo("www.google.com", NULL, &fav);
+    int fd = socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0);
+    for(;;)
+    {
+        if(connect(fd, a->ai_addr, a->ai_addrlen))
+        {
+            fprintf(stderr, "couldn't connect [%i], retrying...\n", errno);
+            sleep(1);
+            continue;
+        }
+        break;
+    }
+    printf("succesfully connected :)\n");
+    EADDRINUSE
 }
