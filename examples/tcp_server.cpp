@@ -24,8 +24,8 @@ int main()
         }
         // End of connection w client
         printf("[!] - client closed connection\n");
-        // Close file descriptor (basicly sends a tcp packet with fin, ack bits declaring the end of the connection,
-        // you can test the difference by comparing end of connection with and w/o the cl.close() line. You will notice
+        // Close file descriptor (
+        // Curiosity: you can test the difference by comparing end of connection with and w/o the cl.close() line. You will notice
         // when removing it the client will send a fin, ack packet to the server but the server won't send one back, 
         // I think that's what a dangling socket means, cause it won't get out of scope and it's destructor won't be called)
         cl.close();

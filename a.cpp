@@ -1,5 +1,7 @@
 #include "prototype.hh"
 
+using str = std::string;
+
 int main()
 {
     s_preferences fav{
@@ -9,8 +11,8 @@ int main()
         .flags = AI_CANONNAME
     };
 
-    auto a = gsocket::getaddrinfo("www.google.com", NULL, &fav);
-    int fd = socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0);
+    auto a = gsocket::getaddrinfo("www.google.com", "https", &fav);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
     for(;;)
     {
         if(connect(fd, a->ai_addr, a->ai_addrlen))
@@ -18,9 +20,21 @@ int main()
             fprintf(stderr, "couldn't connect [%i], retrying...\n", errno);
             sleep(1);
             continue;
-        }
+        }   
         break;
     }
     printf("succesfully connected :)\n");
-    EADDRINUSE
+    str msg;
+    for(;;)
+    {
+        printf("send: ");
+        getline(std::cin, msg);
+        if(msg == "close")
+        {
+            printf("closing connection...\n");
+            close(fd);
+            break;
+        }
+        send(fd, &msg[0], msg.size(), 0);
+    }
 }

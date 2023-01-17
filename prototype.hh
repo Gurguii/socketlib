@@ -135,10 +135,12 @@ namespace gsocket
         {
             throw CustomExceptions("getaddrinfo failed\n");
         }
-
+        str addr(46, '\x00'); // Ipv6 length so both Ipv4 & 6 fit
+        inet_ntop(addrs->ai_addr->sa_family, &((sockaddr_in*)(addrs->ai_addr))->sin_addr, &addr[0], INET_ADDRSTRLEN);
+        printf("Returning socket %i : %s : %s\n", addrs->ai_socktype, &addr[0], addrs->ai_canonname);
         return addrs;
 
-        str addr(46, '\x00'); // Ipv6 length so both Ipv4 & 6 fit
+        //str addr(46, '\x00'); // Ipv6 length so both Ipv4 & 6 fit
 
         for(auto i = addrs; i!=nullptr; i = i->ai_next)
         {
@@ -166,9 +168,6 @@ namespace gsocket
         freeaddrinfo(addrs);
         return nullptr;
     }
-
-
-
     class __sw // POSIX socket methods wrapper
     {
         public:
