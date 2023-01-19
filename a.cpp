@@ -1,40 +1,30 @@
 #include "prototype.hh"
+#include <memory>
 
 using str = std::string;
 
 int main()
 {
-    s_preferences fav{
+    s_preferences fav_socket{
         .family = INET,
         .type = TCP,
         .protocol = 0,
         .flags = AI_CANONNAME
     };
 
-    auto a = gsocket::getaddrinfo("www.google.com", "https", &fav);
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
-    for(;;)
+    //auto fav = std::make_shared<s_preferences>(INET, TCP, 0, AI_CANONNAME);
+
+    //std::cout << "addr: " << fav << " val: " << static_cast<int>((*fav).type) << "\n";
+    
+    auto a = gsocket::getaddrinfo("www.google.com", "443", &fav_socket);
+
+    auto sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(connect(sock, a->ai_addr, a->ai_addrlen))
     {
-        if(connect(fd, a->ai_addr, a->ai_addrlen))
-        {
-            fprintf(stderr, "couldn't connect [%i], retrying...\n", errno);
-            sleep(1);
-            continue;
-        }   
-        break;
+        fprintf(stderr, "couldn't connect to target\n");
     }
-    printf("succesfully connected :)\n");
-    str msg;
-    for(;;)
-    {
-        printf("send: ");
-        getline(std::cin, msg);
-        if(msg == "close")
-        {
-            printf("closing connection...\n");
-            close(fd);
-            break;
-        }
-        send(fd, &msg[0], msg.size(), 0);
-    }
+
+    printf("Sucessfully connected :) to target\n");
+    
 }

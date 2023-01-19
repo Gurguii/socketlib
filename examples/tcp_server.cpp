@@ -5,10 +5,12 @@ using str = std::string;
 int main()
 {
     gsocket::tcp_server sv("127.0.0.1", 8080); // CHANGE
-    if(sv.up())
+    if(!sv.up())
     {
-        printf("[+] - server is up...\nlistening on %s : %i\n", sv.getsockname());
+        fprintf(stderr, "[!] - Couldn't bind to 127.0.0.1:8080\n");
+        return -1;
     }
+    printf("[+] - server is up...\nlistening on %s : %i\n", sv.getsockname());
     str data;
     for(;;)
     {
@@ -24,10 +26,10 @@ int main()
         }
         // End of connection w client
         printf("[!] - client closed connection\n");
-        // Close file descriptor (
+        // Close file descriptor
         // Curiosity: you can test the difference by comparing end of connection with and w/o the cl.close() line. You will notice
         // when removing it the client will send a fin, ack packet to the server but the server won't send one back, 
-        // I think that's what a dangling socket means, cause it won't get out of scope and it's destructor won't be called)
+        // I think that's what a dangling socket means, cause it won't get out of scope and it's destructor won't be called
         cl.close();
     }
 }

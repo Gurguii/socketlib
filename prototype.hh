@@ -1,7 +1,6 @@
 #ifndef GSOCKETS
 #define GSOCKETS
 
-#include <string.h>
 #include <cstring>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -18,14 +17,16 @@
 #define __udp_noblock_sock socket(AF_INET, (SOCK_DGRAM | SOCK_NONBLOCK), 0)
 
 #define _XOPEN_SOURCE_EXTENDED 1
-constexpr int BUFF_SIZE = 10; // read(), recv() default buffer size when reading
+
+constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
+
 /*
     Some recv() flags:
     
     MSG_WAITFORONE - wait for at least one packet to return
 */
 
-enum struct s_family : uint8_t
+enum class s_family : uint8_t
 {
     local = 1, // AF_LOCAL == AF_UNIX
     #define LOCAL s_family::local
@@ -37,7 +38,7 @@ enum struct s_family : uint8_t
 
 // defines possible sock types
 // when calling gsocket::getsocketpair()
-enum struct s_type : uint8_t
+enum class s_type : uint8_t
 {   
     any = 0,
     #define ANY_TYPE s_type::any
@@ -48,7 +49,7 @@ enum struct s_type : uint8_t
     
 };
 
-enum struct socket_behaviour : uint8_t
+enum class socket_behaviour : uint8_t
 {
     noblock = 0, // NONBLOCKING FILE DESCRIPTOR
     #define NOBLOCK socket_behaviour::noblock
@@ -65,16 +66,14 @@ struct sock_data_
 
 struct s_preferences
 {
-    s_family family; // TCP or UDP
-    s_type type; 
+    s_family family; // INET or INET6
+    s_type type; // TCP or UDP
     int protocol; //
     int flags; // 
 };
 
 namespace gsocket
 {
-
-
     using str = std::string;
     using str_view = std::string_view;
 
@@ -113,13 +112,16 @@ namespace gsocket
         return iface;
     }
 
-    // TODO: MAKE THIS USEFUL AND ADD getnameinfo()
+    // Return addrinfo pointer which can be used to connect/bind to
+    // @param host E.g www.google.com
+    // @param service/port E.g 443 == https 
+    // @param hints This is a s_preferences struct which holds data refered to a prefered socket. 
+    // E.g s_preferences{INET, TCP, 0, 0} would tell the function that you prefer a TCP socket which uses ipv4 
     addrinfo* getaddrinfo(str_view host, const char *service = NULL, s_preferences *hints = nullptr)
     {
         addrinfo *addrs = nullptr;
-    
         addrinfo pref{
-            // required params
+            // required for hint
             .ai_flags = hints->flags,
             .ai_family = static_cast<int>(hints->family), 
             .ai_socktype = static_cast<int>(hints->type),
@@ -135,39 +137,29 @@ namespace gsocket
         {
             throw CustomExceptions("getaddrinfo failed\n");
         }
+        
         str addr(46, '\x00'); // Ipv6 length so both Ipv4 & 6 fit
         inet_ntop(addrs->ai_addr->sa_family, &((sockaddr_in*)(addrs->ai_addr))->sin_addr, &addr[0], INET_ADDRSTRLEN);
         printf("Returning socket %i : %s : %s\n", addrs->ai_socktype, &addr[0], addrs->ai_canonname);
-        return addrs;
 
-        //str addr(46, '\x00'); // Ipv6 length so both Ipv4 & 6 fit
-
-        for(auto i = addrs; i!=nullptr; i = i->ai_next)
-        {
-            switch (i->ai_family)
-            {
-            case 2:
-                // ipv4
-                inet_ntop(i->ai_addr->sa_family, &((sockaddr_in*)(i->ai_addr))->sin_addr, &addr[0], INET_ADDRSTRLEN);
-                //std::cout << i->ai_socktype << " : " << addr << " : " << i->ai_canonname << "\n";
-                printf("%i : %s : %s\n", i->ai_socktype, &addr[0], i->ai_canonname);
-                continue;
-            
-            case 10:
-                // ipv6
-                inet_ntop(i->ai_addr->sa_family, &((sockaddr_in*)(i->ai_addr))->sin_addr, &addr[0], INET6_ADDRSTRLEN);
-                printf("%i : %s\n", i->ai_socktype, &addr[0]);
-                continue;
-
-            default:
-                // smth weird
-                printf("default behaviour\n");
-                break;
-            }
-        }
+        /* Why is this working? I might be missunderstanding the freeaddrinfo use, shouldn't it empty the whole list? */
         freeaddrinfo(addrs);
-        return nullptr;
+        return addrs;
     }
+
+    std::pair<str, str> getnameinfo(sockaddr* addr, socklen_t addrlen)
+    {
+        str h(46, '\x00');
+        str s(46, '\x00');
+
+        if(::getnameinfo(addr, addrlen, &h[0], 46, &s[0], 46, 0))
+        {
+            throw CustomExceptions("getnameinfo failed\n");
+        }
+        //std::cout << h << " : " << s << "\n";
+        return {h,s};
+    }
+
     class __sw // POSIX socket methods wrapper
     {
         public:
@@ -311,6 +303,7 @@ namespace gsocket
         /*  
             Connection-oriented sockets (TCP) it tries to connect to host:port
             Connectionless sockets (UDP) it sets default host:port for further send() calls(faster than constantly calling sendto())
+            Returns 0 on sucess 1 on failure 
         */
         int connect(str_view host, int port)
         {
@@ -321,7 +314,7 @@ namespace gsocket
             // Check address and assign it to host struct
             if (inet_pton(this->domain, &host[0], &addr.sin_addr) <= 0)
             {
-                throw CustomExceptions("\nInvalid / unsupported ip address\n");
+                return 1;
             }
 
             // Attempt connecting to host
@@ -352,7 +345,7 @@ namespace gsocket
             str data;
             str buffer(BUFF_SIZE, '\x00');
             int last;
-            while(1)
+            for(;;)
             {
                 if((last = ::read(this->sock, &buffer[0], BUFF_SIZE)) < BUFF_SIZE)
                 {
@@ -380,7 +373,7 @@ namespace gsocket
             str buffer(BUFF_SIZE, '\x00');
             int last;
 
-            while(1)
+            for(;;)
             {
                 if((last = ::recv(this->sock, &buffer[0], BUFF_SIZE, 0)) < BUFF_SIZE)
                 {
