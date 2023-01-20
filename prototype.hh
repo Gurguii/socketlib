@@ -51,9 +51,9 @@ enum class s_type : uint8_t
 
 enum class socket_behaviour : uint8_t
 {
-    noblock = 0, // NONBLOCKING FILE DESCRIPTOR
+    noblock = 0, // NONBLOCKING FILE DESCRIPTOR - every operation will by default be nonblocking
     #define NOBLOCK socket_behaviour::noblock
-    block = 1 // BLOCKING FILE DESCRIPTOR
+    block = 1 // BLOCKING FILE DESCRIPTOR - every operation will by default be blocking
     #define BLOCK socket_behaviour::block
 };
 
@@ -67,9 +67,9 @@ struct sock_data_
 struct s_preferences
 {
     s_family family; // INET or INET6
-    s_type type; // TCP or UDP
-    int protocol; //
-    int flags; // 
+    s_type type;     // TCP or UDP
+    int protocol;    //
+    int flags;       // 
 };
 
 namespace gsocket
@@ -91,16 +91,16 @@ namespace gsocket
         }
     };
     // Returns ipv4 addr of interface E.g eth0, lo, docker0
-    str getIpByIface(str_view ifa)
+    str getIpByIface(str_view ifa, s_family t = INET)
     {
         ifaddrs *addrs = nullptr;
         getifaddrs(&addrs);
 
-        str iface(INET_ADDRSTRLEN, '\x00');
+        str iface(46, '\x00'); // Ipv6 length so both choices fit
 
         for(auto a = addrs ; a!=nullptr; a = a->ifa_next)
         {
-            if(a->ifa_addr->sa_family == AF_INET)
+            if(a->ifa_addr->sa_family == static_cast<int>(t))
             {
                 if(!strcmp(ifa.data(), a->ifa_name))
                 {
@@ -112,12 +112,12 @@ namespace gsocket
         return iface;
     }
 
-    // Return addrinfo pointer which can be used to connect/bind to
+    // @Return addrinfo pointer which can be used to connect/bind to
     // @param host E.g www.google.com
     // @param service/port E.g 443 == https 
     // @param hints This is a s_preferences struct which holds data refered to a prefered socket. 
-    // E.g s_preferences{INET, TCP, 0, 0} would tell the function that you prefer a TCP socket which uses ipv4 
-    addrinfo* getaddrinfo(str_view host, const char *service = NULL, s_preferences *hints = nullptr)
+    // E.g s_preferences{INET, TCP, 0, 0} would tell the function that you prefer a TCP/Ipv4 socket
+    addrinfo* getaddrinfo(str_view host, str_view service = NULL, s_preferences *hints = nullptr)
     {
         addrinfo *addrs = nullptr;
         addrinfo pref{
@@ -133,7 +133,7 @@ namespace gsocket
             .ai_next = nullptr
         };
 
-        if(::getaddrinfo(&host[0], service, &pref, &addrs))
+        if(::getaddrinfo(&host[0], &service[0], &pref, &addrs))
         {
             throw CustomExceptions("getaddrinfo failed\n");
         }
@@ -141,12 +141,11 @@ namespace gsocket
         str addr(46, '\x00'); // Ipv6 length so both Ipv4 & 6 fit
         inet_ntop(addrs->ai_addr->sa_family, &((sockaddr_in*)(addrs->ai_addr))->sin_addr, &addr[0], INET_ADDRSTRLEN);
         printf("Returning socket %i : %s : %s\n", addrs->ai_socktype, &addr[0], addrs->ai_canonname);
-
         /* Why is this working? I might be missunderstanding the freeaddrinfo use, shouldn't it empty the whole list? */
         freeaddrinfo(addrs);
         return addrs;
     }
-
+    
     std::pair<str, str> getnameinfo(sockaddr* addr, socklen_t addrlen)
     {
         str h(46, '\x00');
@@ -156,7 +155,6 @@ namespace gsocket
         {
             throw CustomExceptions("getnameinfo failed\n");
         }
-        //std::cout << h << " : " << s << "\n";
         return {h,s};
     }
 
@@ -197,8 +195,8 @@ namespace gsocket
             ::close(this->sock);
         }
         
-        // idk if this is worth, the idea is to avoid constructing a new obj and just
-        // closing and creating a new sock on the already existing obj
+        // idk if this is worth, the idea is to avoid destructing and constructing
+        // to make a new socket of same characteristics
         void reset()
         {
             ::close(this->sock);
@@ -324,7 +322,15 @@ namespace gsocket
             }
             return 0;
         }
-
+        // Attempts connecting to target, addrinfo* struct can be retrieved from getaddrinfo()
+        int connect(addrinfo *target)
+        {
+            if(::connect(this->sock, (sockaddr *)target->ai_addr, target->ai_addrlen))
+            {
+                return 1;
+            }
+            return 0;
+        }
         // Sends data through socket
         // returns bytes sent
         int send(str_view data)
@@ -408,12 +414,13 @@ namespace gsocket
             return n;
         }
         /* 
-            Receive N bytes of data (default 1024) and return rhost, rport, and data received 
+            Receive N bytes of data (default BUFF_SIZE = 1024) and return rhost, rport, and data received 
             struct sock_data_{
                 const char *host;
                 int port;
                 const char *msg;
             }
+            @param N amount of data to receive
         */
         sock_data_ recvfrom(int N = BUFF_SIZE)
         {
@@ -426,8 +433,6 @@ namespace gsocket
 
             return sock_data_{inet_ntoa(addr.sin_addr), htons(addr.sin_port), data};
         }
-
-
     };
 
     class socket : public __sw

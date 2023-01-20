@@ -1,10 +1,10 @@
-#include "prototype.hh"
+#include "../prototype.hh"
 
 using str = std::string;
 
 int main()
 {
-    gsocket::udp_server s(8080);
+    gsocket::udp_server s("127.0.0.1", 8080);
     if(!s.binded())
     {
         printf("Couldn't bind");
