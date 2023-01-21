@@ -1,4 +1,4 @@
-#include "../prototype.hh"
+#include "../../prototype.hh"
 
 int main()
 {

@@ -15,6 +15,8 @@
 #define __tcp_noblock_sock socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0)
 #define __udp_block_sock socket(AF_INET, SOCK_DGRAM, 0)
 #define __udp_noblock_sock socket(AF_INET, (SOCK_DGRAM | SOCK_NONBLOCK), 0)
+#define __tcp6_block_sock socket(AF_INET6, SOCK_STREAM, 0)
+#define __tcp6_noblock_sock socket(AF_INET6, (SOCK_STREAM | SOCK_NONBLOCK), 0);
 
 #define _XOPEN_SOURCE_EXTENDED 1
 
@@ -30,9 +32,9 @@ enum class s_family : uint8_t
 {
     local = 1, // AF_LOCAL == AF_UNIX
     #define LOCAL s_family::local
-    inet = 2, // tcp/ip protocol - ipv4 addr
+    inet = AF_INET, // tcp/ip protocol - ipv4 addr
     #define INET s_family::inet
-    inet6 = 10 // tcp/ip protocol - ipv6 addr 
+    inet6 = AF_INET6 // tcp/ip protocol - ipv6 addr 
     #define INET6 s_family::inet6
 };
 
@@ -57,6 +59,14 @@ enum class socket_behaviour : uint8_t
     #define BLOCK socket_behaviour::block
 };
 
+enum class ip_family : uint8_t
+{
+    ipv4 = 2,
+    #define Ipv4 ip_family::ipv4
+    ipv6 = 10,
+    #define Ipv6 ip_family::ipv6
+};
+
 struct sock_data_
 {
     const char *host;
@@ -68,7 +78,7 @@ struct s_preferences
 {
     s_family family; // INET or INET6
     s_type type;     // TCP or UDP
-    int protocol;    //
+    int protocol;    // 
     int flags;       // 
 };
 
@@ -91,7 +101,7 @@ namespace gsocket
         }
     };
     // Returns ipv4 addr of interface E.g eth0, lo, docker0
-    str getIpByIface(str_view ifa, s_family t = INET)
+    str getIpByIface(str_view ifa, ip_family &&t = Ipv4)
     {
         ifaddrs *addrs = nullptr;
         getifaddrs(&addrs);
@@ -102,21 +112,28 @@ namespace gsocket
         {
             if(a->ifa_addr->sa_family == static_cast<int>(t))
             {
-                if(!strcmp(ifa.data(), a->ifa_name))
+                if(strcmp(ifa.data(), a->ifa_name))
                 {
-                    inet_ntop(a->ifa_addr->sa_family, &((sockaddr_in*)(a->ifa_addr))->sin_addr, &iface[0], INET_ADDRSTRLEN);
-                    return iface;
+                    continue;
                 }
+
+                if(static_cast<int>(t) == AF_INET){
+                    //printf("converting ipv4\n");
+                    inet_ntop(a->ifa_addr->sa_family, &((sockaddr_in*)(a->ifa_addr))->sin_addr, &iface[0], INET_ADDRSTRLEN);
+                }else if(static_cast<int>(t) == AF_INET6){
+                    //printf("converting ipv6\n");
+                    inet_ntop(a->ifa_addr->sa_family, &((sockaddr_in6*)(a->ifa_addr))->sin6_addr, &iface[0], INET6_ADDRSTRLEN);
+                }
+                return iface;
             }
         }
         return iface;
     }
-
-    // @Return addrinfo pointer which can be used to connect/bind to
+    // Return addrinfo pointer which can be used to connect/bind to
     // @param host E.g www.google.com
     // @param service/port E.g 443 == https 
     // @param hints This is a s_preferences struct which holds data refered to a prefered socket. 
-    // E.g s_preferences{INET, TCP, 0, 0} would tell the function that you prefer a TCP/Ipv4 socket
+    // e.g. s_preferences{INET, TCP, 0, 0} would tell the function that you prefer a TCP/Ipv4 socket
     addrinfo* getaddrinfo(str_view host, str_view service = NULL, s_preferences *hints = nullptr)
     {
         addrinfo *addrs = nullptr;
@@ -137,10 +154,8 @@ namespace gsocket
         {
             throw CustomExceptions("getaddrinfo failed\n");
         }
-        
-        str addr(46, '\x00'); // Ipv6 length so both Ipv4 & 6 fit
-        inet_ntop(addrs->ai_addr->sa_family, &((sockaddr_in*)(addrs->ai_addr))->sin_addr, &addr[0], INET_ADDRSTRLEN);
-        printf("Returning socket %i : %s : %s\n", addrs->ai_socktype, &addr[0], addrs->ai_canonname);
+        //&((sockaddr_in6*)(addrs->ai_addr))->sin6_addr)
+        //&(static_cast<sockaddr_in6>(addrs->ai_addr)->sin6_addr)
         /* Why is this working? I might be missunderstanding the freeaddrinfo use, shouldn't it empty the whole list? */
         freeaddrinfo(addrs);
         return addrs;
@@ -182,9 +197,16 @@ namespace gsocket
 
         int accept()
         {
-            sockaddr_in newsock;
-            int addrlen = sizeof(newsock);
-            return ::accept(this->sock, (sockaddr *)&newsock, (socklen_t *)&addrlen);
+            if(this->domain == AF_INET){
+                sockaddr_in newsock;
+                int addrlen = sizeof(newsock);
+                return ::accept(this->sock, (sockaddr *)&newsock, (socklen_t *)&addrlen);
+            }else if(this->domain == AF_INET6){
+                sockaddr_in6 newsock;
+                int addrlen = sizeof(newsock);
+                return ::accept(this->sock, (sockaddr *)&newsock.sin6_addr, (socklen_t *)&addrlen);
+            }
+            return 0;
         }
 
         public:
@@ -202,19 +224,18 @@ namespace gsocket
             ::close(this->sock);
             this->sock = ::socket(this->domain, this->type, this->protocol);
         }
-
+        
+        // Returns std::pair containing socket's ip and port
         std::pair<char*, int> getsockname()
-        {
-            // Returns std::pair containing socket's ip and port 
+        { 
             sockaddr_in s;
             int slen = sizeof(s);
             ::getsockname(this->sock, (sockaddr*)&s, (socklen_t*)&slen);
             return {inet_ntoa(s.sin_addr), htons(s.sin_port)};
         }
-        
+        // Returns std::pair containing socket peer's ip and port
         std::pair<char*, int> getpeername()
         {
-            // Returns std::pair containing socket peer's ip and port
             sockaddr_in s;
             int addrl = sizeof(s);
             ::getpeername(this->sock, (sockaddr *)&s, (socklen_t *)&addrl);
@@ -243,51 +264,62 @@ namespace gsocket
             return 0;
         }
 
-        // Binds socket to 
+        // Binds socket to
         int bind(str_view iface, int port)
         {
             str inet_iface{iface};
             // Check if iface is an address or iface name (E.g eth0);
             if(iface.empty())
             {
-
-                iface = "0.0.0.0"; // all local ipv4 addresses
+                printf("empty\n");
+                inet_iface = "0.0.0.0"; // all local ipv4 addresses
             }
-            else
+            if(this->domain == AF_INET)
             {
-                for(char c : iface)
+                sockaddr_in addr;
+                int opt = 1;
+
+                if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
                 {
-                    if((c < 48 || c > 57) && c != 46)
-                    {
-                        // Iterate through chars, if char differs from 0-9 and '.'
-                        // we are probably getting a iface name 
-                        inet_iface = getIpByIface(iface);
-                    }
+                    throw CustomExceptions("Can't set socket");
                 }
-            }
 
-            sockaddr_in addr;
-            int opt = 1;
-            
-            if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
-            {
-                throw CustomExceptions("Can't set socket");
-            }
+                addr.sin_family = this->domain;
+                addr.sin_port = htons(port);
 
-            addr.sin_family = this->domain;
-            addr.sin_port = htons(port);
-            
-            if (inet_pton(this->domain, &inet_iface[0], &addr.sin_addr.s_addr) < 0)
+                if (inet_pton(this->domain, &inet_iface[0], &addr.sin_addr.s_addr) < 0)
+                { 
+                    throw CustomExceptions("Invalid / unsupported Ipv4 address");
+                };
+
+                if(::bind(this->sock, (sockaddr *)&addr, sizeof(addr)) < 0)
+                {
+                    throw CustomExceptions("Can't bind to port");
+                }
+            }else if(this->domain == AF_INET6)
             {
+                sockaddr_in6 addr;
+                int opt = 1;
+
+                if(setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+                {
+                    throw CustomExceptions("Can't set socket");
+                }
+
+                addr.sin6_family = AF_INET6;
+                addr.sin6_port = htons(port);
                 
-                throw CustomExceptions("Invalid / unsupported Ipv4 address");
-            };
-            
-            if(::bind(this->sock, (sockaddr *)&addr, sizeof(addr)) < 0)
-            {
-                throw CustomExceptions("Can't bind to port");
-            }
+                printf("trying to put ip => %s\n", inet_iface.c_str());
+                if (inet_pton(AF_INET6, inet_iface.c_str(), &addr.sin6_addr) < 0)
+                { 
+                    throw CustomExceptions("Invalid / unsupported Ipv6 address");
+                };
 
+                if(::bind(this->sock, (sockaddr *)&addr, sizeof(addr)) < 0)
+                {
+                    throw CustomExceptions("Can't bind to port");
+                }   
+            }
             return 0;  
         }
         /*
@@ -305,31 +337,37 @@ namespace gsocket
         */
         int connect(str_view host, int port)
         {
-            sockaddr_in addr;
-            addr.sin_family = AF_INET;
-            addr.sin_port = htons(port);
-
-            // Check address and assign it to host struct
-            if (inet_pton(this->domain, &host[0], &addr.sin_addr) <= 0)
-            {
-                return 1;
+            if(this->domain == AF_INET){
+                sockaddr_in addr;
+                addr.sin_family = AF_INET;
+                addr.sin_port = htons(port);
+                // Check address and assign it to host struct
+                if (inet_pton(this->domain, &host[0], &addr.sin_addr) <= 0){
+                    return 1;
+                }
+                if(::connect(this->sock, (sockaddr *)&addr, sizeof(addr)))
+                {
+                    return 1;
+                }
+            }else if(this->domain == AF_INET6){
+                sockaddr_in6 addr;
+                addr.sin6_family = AF_INET6;
+                addr.sin6_port = htons(port);
+                if(inet_pton(this->domain, &host[0], &addr.sin6_addr) <= 0){
+                    return 1;
+                }
+                if(::connect(this->sock, (sockaddr *)&addr, sizeof(addr)))
+                {
+                    return 1;
+                }
             }
 
-            // Attempt connecting to host
-            if(::connect(this->sock, (sockaddr *)&addr, sizeof(addr)))
-            {
-                return 1;
-            }
             return 0;
         }
         // Attempts connecting to target, addrinfo* struct can be retrieved from getaddrinfo()
         int connect(addrinfo *target)
         {
-            if(::connect(this->sock, (sockaddr *)target->ai_addr, target->ai_addrlen))
-            {
-                return 1;
-            }
-            return 0;
+            return ::connect(this->sock, (sockaddr *)target->ai_addr, target->ai_addrlen);
         }
         // Sends data through socket
         // returns bytes sent
@@ -337,7 +375,6 @@ namespace gsocket
         {
             return ::send(this->sock, &data[0], data.size(), 0);
         }
-
         // Sends N bytes of data through socket
         // returns bytes sent
         int send(str_view data, int N)
@@ -450,16 +487,16 @@ namespace gsocket
         {}
 
         // NOTE -> gsocket::socket(AF_INET, SOCK_STREAM, 0) == SAME AS == gsocket::socket(INET, TCP, BLOCK);
-        socket(s_family domain, s_type type, socket_behaviour protocol)
-        :__sw(static_cast<int>(domain), (protocol == BLOCK ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0)
+        socket(s_family domain, s_type type, socket_behaviour b)
+        :__sw(static_cast<int>(domain), (b == BLOCK ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0)
         {}
     };
     
     class tcp_socket : public __sw
     {
         public:
-        tcp_socket(socket_behaviour p = BLOCK)
-        :__sw(AF_INET, (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
+        tcp_socket(ip_family f = Ipv4, socket_behaviour b = BLOCK)
+        :__sw(static_cast<int>(f), (static_cast<int>(b) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
         {
             // default constructor
         }
@@ -476,8 +513,8 @@ namespace gsocket
         int status = 0;
 
         public:    
-        tcp_client(str_view host, int port, socket_behaviour p = BLOCK)
-        :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
+        tcp_client(str_view host, int port, ip_family f = Ipv4, socket_behaviour p = BLOCK)
+        :__sw(static_cast<int>(f), (static_cast<int>(p) ? (SOCK_STREAM) : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
         {
             this->status = !__sw::connect(host, port);
         }
@@ -491,11 +528,11 @@ namespace gsocket
     class tcp_server : public __sw
     {
         private:
-        int __status = 1;
+        uint8_t __status = 1;
 
         public:
-        tcp_server(str_view addr_iface, int port, int maxconns = 3, socket_behaviour p = BLOCK)
-        :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
+        tcp_server(str_view addr_iface, int port, ip_family f = Ipv4, int maxconns = 3, socket_behaviour p = BLOCK)
+        :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
         {
             if(__sw::bind(addr_iface, port))
             {
@@ -507,17 +544,17 @@ namespace gsocket
             };
         }
 
-        tcp_server(int port, int maxconns = 3, socket_behaviour p = BLOCK)
-        :__sw(static_cast<int>(p) ? __tcp_block_sock : __tcp_noblock_sock)
+        tcp_server(int port, ip_family f = Ipv4, int maxconns = 3, socket_behaviour p = BLOCK)
+        :__sw(static_cast<int>(f), (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
         {
-            if(__sw::bind(port))
+            if((__sw::bind(port)) || ((__sw::listen(maxconns))))
             {
                 this->__status = 0;
             };
-            if(__sw::listen(maxconns))
-            {
-                this->__status = 0;
-            };
+            //if(__sw::listen(maxconns))
+            //{
+            //    this->__status = 0;
+            //};
         }
 
         gsocket::socket accept_connection()
@@ -555,7 +592,7 @@ namespace gsocket
     class udp_server : public __sw
     {
         private:
-        int __status = 0;
+        uint8_t __status = 0;
 
         public:
         /*
@@ -566,21 +603,14 @@ namespace gsocket
         udp_server(str_view addr_iface, int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {
-            if(!__sw::bind(addr_iface, port))
-            {
-                this->__status = 1;
-            };
-            
+            this->__status == !__sw::bind(addr_iface, port);   
         }
 
         // bind to port and listen in any local ipv4 address
         udp_server(int port, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
         {
-            if(!__sw::bind(port))
-            {
-                this->__status = 1;
-            };
+            this->__status == !__sw::bind(port); 
         }
 
         int binded()
