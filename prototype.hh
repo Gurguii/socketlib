@@ -8,15 +8,9 @@
 #include <string>
 #include <ifaddrs.h>
 #include <netdb.h>
+#include <net/if.h>
 #include <errno.h> // NOT IN USE
 #include <iostream> // TEMP
-
-#define __tcp_block_sock socket(AF_INET, SOCK_STREAM, 0)
-#define __tcp_noblock_sock socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0)
-#define __udp_block_sock socket(AF_INET, SOCK_DGRAM, 0)
-#define __udp_noblock_sock socket(AF_INET, (SOCK_DGRAM | SOCK_NONBLOCK), 0)
-#define __tcp6_block_sock socket(AF_INET6, SOCK_STREAM, 0)
-#define __tcp6_noblock_sock socket(AF_INET6, (SOCK_STREAM | SOCK_NONBLOCK), 0);
 
 #define _XOPEN_SOURCE_EXTENDED 1
 
@@ -55,7 +49,7 @@ enum class socket_behaviour : uint8_t
 {
     noblock = 0, // NONBLOCKING FILE DESCRIPTOR - every operation will by default be nonblocking
     #define NOBLOCK socket_behaviour::noblock
-    block = 1 // BLOCKING FILE DESCRIPTOR - every operation will by default be blocking
+    block = 1 // @default BLOCKING FILE DESCRIPTOR - every operation will by default be blocking
     #define BLOCK socket_behaviour::block
 };
 
@@ -116,7 +110,6 @@ namespace gsocket
                 {
                     continue;
                 }
-
                 if(static_cast<int>(t) == AF_INET){
                     //printf("converting ipv4\n");
                     inet_ntop(a->ifa_addr->sa_family, &((sockaddr_in*)(a->ifa_addr))->sin_addr, &iface[0], INET_ADDRSTRLEN);
@@ -124,9 +117,11 @@ namespace gsocket
                     //printf("converting ipv6\n");
                     inet_ntop(a->ifa_addr->sa_family, &((sockaddr_in6*)(a->ifa_addr))->sin6_addr, &iface[0], INET6_ADDRSTRLEN);
                 }
+                freeifaddrs(addrs);
                 return iface;
             }
         }
+        freeifaddrs(addrs);
         return iface;
     }
     // Return addrinfo pointer which can be used to connect/bind to
@@ -179,7 +174,6 @@ namespace gsocket
         const char *error;
 
         protected:
-
         __sw(int domain, int type, int protocol)
         {
             // main constructor
@@ -267,11 +261,10 @@ namespace gsocket
         // Binds socket to
         int bind(str_view iface, int port)
         {
-            str inet_iface{iface};
-            // Check if iface is an address or iface name (E.g eth0);
+            str inet_iface(46, '\x00');
+            inet_iface = iface;
             if(iface.empty())
             {
-                printf("empty\n");
                 inet_iface = "0.0.0.0"; // all local ipv4 addresses
             }
             if(this->domain == AF_INET)
@@ -306,9 +299,11 @@ namespace gsocket
                     throw CustomExceptions("Can't set socket");
                 }
 
-                addr.sin6_family = AF_INET6;
+                addr.sin6_family = AF_INET6;    
                 addr.sin6_port = htons(port);
-                
+                if(!(addr.sin6_scope_id = if_nametoindex("eth0"))){
+                    fprintf(stderr, "nametoindex failed\n");
+                };
                 printf("trying to put ip => %s\n", inet_iface.c_str());
                 if (inet_pton(AF_INET6, inet_iface.c_str(), &addr.sin6_addr) < 0)
                 { 
@@ -353,6 +348,7 @@ namespace gsocket
                 sockaddr_in6 addr;
                 addr.sin6_family = AF_INET6;
                 addr.sin6_port = htons(port);
+                //addr.sin6_scope_id = if_nametoindex("eth0");
                 if(inet_pton(this->domain, &host[0], &addr.sin6_addr) <= 0){
                     return 1;
                 }
@@ -361,7 +357,6 @@ namespace gsocket
                     return 1;
                 }
             }
-
             return 0;
         }
         // Attempts connecting to target, addrinfo* struct can be retrieved from getaddrinfo()
@@ -534,56 +529,44 @@ namespace gsocket
         tcp_server(str_view addr_iface, int port, ip_family f = Ipv4, int maxconns = 3, socket_behaviour p = BLOCK)
         :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
         {
-            if(__sw::bind(addr_iface, port))
+            if((__sw::bind(addr_iface, port) || __sw::listen(maxconns)))
             {
                 this->__status = 0;
-            };
-            if(__sw::listen(maxconns))
-            {
-                this->__status = 0;
-            };
+            }; 
         }
 
         tcp_server(int port, ip_family f = Ipv4, int maxconns = 3, socket_behaviour p = BLOCK)
-        :__sw(static_cast<int>(f), (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
-        {
+        :__sw(static_cast<int>(f), (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0){
+
             if((__sw::bind(port)) || ((__sw::listen(maxconns))))
             {
                 this->__status = 0;
             };
-            //if(__sw::listen(maxconns))
-            //{
-            //    this->__status = 0;
-            //};
         }
 
-        gsocket::socket accept_connection()
-        {
+        gsocket::socket accept_connection(){
             return __sw::accept();
         }
 
-        int up()
-        {
+        int up(){
             return this->__status;
         }
     };
 
-    class udp_socket : public __sw
-    {
+    class udp_socket : public __sw{
         public:
         // socket_behaviour = BLOCK | NOBLOCK
         // defines file descriptor default behaviour
-        udp_socket(socket_behaviour p = BLOCK)
-        :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
+        udp_socket(ip_family f = Ipv4, socket_behaviour p = BLOCK)
+        :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK), 0)
         {}
     };
 
-    class udp_client : public __sw
-    {
+    class udp_client : public __sw{
         public:
         // set default host port for future send() calls
-        udp_client(str_view host, int port, socket_behaviour p = BLOCK)
-        :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
+        udp_client(str_view host, int port, ip_family f = Ipv4, socket_behaviour p = BLOCK)
+        :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK), 0)
         {
             __sw::connect(host, port);
         }
@@ -600,15 +583,15 @@ namespace gsocket
             if addr_iface is empty, 0.0.0.0 will be chosen,
             meaning it will receive data from any local ipv4 address
         */
-        udp_server(str_view addr_iface, int port, socket_behaviour p = BLOCK)
-        :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
+        udp_server(str_view addr_iface, int port, ip_family f = Ipv4, socket_behaviour p = BLOCK)
+        :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK), 0)
         {
             this->__status == !__sw::bind(addr_iface, port);   
         }
 
         // bind to port and listen in any local ipv4 address
-        udp_server(int port, socket_behaviour p = BLOCK)
-        :__sw(static_cast<int>(p) ? __udp_block_sock : __udp_noblock_sock)
+        udp_server(int port, ip_family f = Ipv4, socket_behaviour p = BLOCK)
+        :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK), 0)
         {
             this->__status == !__sw::bind(port); 
         }
