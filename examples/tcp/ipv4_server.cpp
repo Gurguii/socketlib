@@ -5,7 +5,7 @@ using str = std::string;
 int main()
 {
     gsocket::tcp_server sv("127.0.0.1", 8080); // CHANGE
-    if(!sv.up())
+    if(sv.failure())
     {
         fprintf(stderr, "[!] - Couldn't bind to 127.0.0.1:8080\n");
         return -1;

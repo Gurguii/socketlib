@@ -1,6 +1,6 @@
 #ifndef GSOCKETS
 #define GSOCKETS
-
+#include <iostream>
 #include <cstring>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -10,43 +10,37 @@
 #include <netdb.h>
 #include <net/if.h>
 #include <errno.h>
-#include <iostream> // TEMP
 #include <memory>
 
 #define _XOPEN_SOURCE_EXTENDED 1
 
 constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
 
+addrinfo *testing = nullptr;
 /*
     Some recv() flags:
     
     MSG_WAITFORONE - wait for at least one packet to return
 */
-class addressInfo
-{
+class addressInfo{
     private:
-    std::unique_ptr<addrinfo> head;
-    void freeme(){
-        freeaddrinfo(head.get());
-    }
-    
+    addrinfo *head;
     public:
     addressInfo(addrinfo *addrs)
-    :head(std::make_unique<addrinfo>(*addrs))
+    :head(addrs)
     {
         // constructor
     }
-    std::pair<sockaddr *, socklen_t> get_connect(){
-        return{head.get()->ai_addr, head.get()->ai_addrlen};
+    const addrinfo *get(){
+        return head;
     };
-
     ~addressInfo(){
-        printf("destructor\n");
+        // free addrinfo memory when out of scope
+        freeaddrinfo(head);
     }
 };
 
-enum class Domain : uint8_t
-{
+enum class Domain : uint8_t{
     local = AF_LOCAL, // AF_LOCAL == AF_UNIX
     #define local Domain::local
     inet = AF_INET, // tcp/ip protocol - ipv4 addr
@@ -57,8 +51,7 @@ enum class Domain : uint8_t
 
 // defines possible sock types
 // when calling gsocket::getsocketpair()
-enum class Type : uint8_t
-{   
+enum class Type : uint8_t{  
     any = 0,
     #define ANY_TYPE Type::any
     tcp = 1, // SOCK_STREAM
@@ -76,23 +69,20 @@ enum class Behaviour : uint8_t
     #define BLOCK Behaviour::block
 };
 
-struct sock_data_
-{
+struct sock_data_{
     const char *host;
     int port;
     std::string msg;
 };
 
-struct s_preferences
-{
+struct s_preferences{
     Domain family;   // INET or INET6
     Type type;       // stream or dgram
     int protocol;    // 
     int flags;       // 
 };
 
-namespace gsocket
-{
+namespace gsocket{
     using str = std::string;
     using str_view = std::string_view;
 
@@ -143,10 +133,10 @@ namespace gsocket
         addrinfo *addrs = nullptr;
         addrinfo pref{
             // required for hint
-            .ai_flags = hints->flags,
+            .ai_flags = static_cast<int>(hints->flags),
             .ai_family = static_cast<int>(hints->family), 
             .ai_socktype = static_cast<int>(hints->type),
-            .ai_protocol = hints->protocol,
+            .ai_protocol = static_cast<int>(hints->protocol),
             // not required
             .ai_addrlen = 0,
             .ai_addr = nullptr,
@@ -160,11 +150,10 @@ namespace gsocket
             return nullptr;
             //throw CustomExceptions("getaddrinfo failed\n");
         }
-        //&((sockaddr_in6*)(addrs->ai_addr))->sin6_addr)
-        //&(static_cast<sockaddr_in6*>(addrs->ai_addr)->sin6_addr)
-        if(addrs->ai_next == nullptr){
-            printf("NULLPTR\n");
+        if(addrs->ai_next != nullptr){
+            throw CustomExceptions("this shouldn't have happened\n");
         }
+        testing = addrs;
         return addressInfo(addrs);
     }
     std::pair<str, str> getnameinfo(sockaddr* addr, socklen_t addrlen)
@@ -244,6 +233,7 @@ namespace gsocket
                 ::getsockname(sock, reinterpret_cast<sockaddr*>(&addr), &addrlen);
                 char *ad;
                 inet_ntop(AF_INET6, &addr.sin6_addr, ad, INET6_ADDRSTRLEN);
+                printf("address => %s\n", ad);
                 return {ad, htons(addr.sin6_port)};
             }
             return {nullptr, 0};
@@ -259,29 +249,55 @@ namespace gsocket
             }else if(domain == AF_INET6){
                 sockaddr_in6 addr;
                 socklen_t addrlen = sizeof(addr);
-                
+                ::getpeername(sock, reinterpret_cast<sockaddr*>(&addr), &addrlen);
+                // INET NTOP
+                return {};
             }
-
         }
-
         // Bind to port ready to listen in any address
-        int bind(int port)
+        int bind(int port, const char *iface = nullptr)
         {
-            sockaddr_in addr;
-            int opt = 1;
-
-            if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
-            {
-                throw CustomExceptions("set socket failed " + std::string(strerror(errno)));
+            if(domain != AF_INET && domain != AF_INET6){
+                throw CustomExceptions("domain must be inet / inet6\n");
             }
-
-            addr.sin_family = domain;
-            addr.sin_port = htons(port);
-            addr.sin_addr.s_addr = INADDR_ANY;
-
-            if(::bind(sock, (sockaddr *)&addr, sizeof(addr)) < 0)
-            {
-                throw CustomExceptions("binding failed " + std::string(strerror(errno)));
+            if(domain == AF_INET){
+                sockaddr_in addr;
+                int opt = 1;
+                if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+                {
+                    throw CustomExceptions("set socket failed " + std::string(strerror(errno)));
+                }
+                addr.sin_family = domain;
+                addr.sin_port = htons(port);
+                addr.sin_addr.s_addr = INADDR_ANY;
+                if(::bind(sock, (sockaddr *)&addr, sizeof(addr)) < 0)
+                {
+                    throw CustomExceptions("binding failed " + std::string(strerror(errno)));
+                }
+            }
+            else if(domain == AF_INET6){
+                if(iface == nullptr){
+                    throw CustomExceptions("iface can't be null with Ipv6\n");
+                }
+                sockaddr_in6 addr;
+                int opt = 1;
+                if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+                {
+                    throw CustomExceptions("can't set socket" + std::string(strerror(errno)));
+                }
+                addr.sin6_family = AF_INET6;    
+                addr.sin6_port = htons(port);
+                if(!(addr.sin6_scope_id = if_nametoindex(iface))){
+                    fprintf(stderr, "nametoindex failed\n");
+                };
+                if (inet_pton(AF_INET6, iface, &addr.sin6_addr) < 0)
+                { 
+                    throw CustomExceptions("Invalid / unsupported inet6 address");
+                };
+                if(::bind(sock, (sockaddr *)&addr, sizeof(addr)) < 0)
+                {
+                    throw CustomExceptions("Can't bind to port");
+                }   
             }
             return 0;
         }
@@ -289,11 +305,14 @@ namespace gsocket
         // Binds socket to
         int bind(str_view iface, int port)
         {
+            if(domain != AF_INET && domain != AF_INET6){
+                throw CustomExceptions("domain must be inet / inet6\n");
+            }
             str inet_iface(46, '\x00');
             inet_iface = iface;
             if(iface.empty())
             {
-                inet_iface = "0.0.0.0"; // all local ipv4 addresses
+                inet_iface = (domain == AF_INET ? "0.0.0.0" : "::1"); // all local ipv4/ipv6 addresses
             } 
             if(domain == AF_INET)
             {
@@ -302,7 +321,7 @@ namespace gsocket
 
                 if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
                 {
-                    throw CustomExceptions("Can't set socket");
+                    throw CustomExceptions("set socket failed " + std::string(strerror(errno)));
                 }
 
                 addr.sin_family = domain;
@@ -310,12 +329,12 @@ namespace gsocket
 
                 if (inet_pton(domain, &inet_iface[0], &addr.sin_addr.s_addr) < 0)
                 { 
-                    throw CustomExceptions("Invalid / unsupported inet address");
+                    throw CustomExceptions("invalid / unsupported inet address " + std::string(strerror(errno)));
                 };
 
                 if(::bind(sock, (sockaddr *)&addr, sizeof(addr)) < 0)
                 {
-                    throw CustomExceptions("Can't bind to port");
+                    throw CustomExceptions("can't bind to port " + std::string(strerror(errno)));
                 }
             }else if(domain == AF_INET6)
             {
@@ -324,7 +343,7 @@ namespace gsocket
 
                 if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
                 {
-                    throw CustomExceptions("Can't set socket");
+                    throw CustomExceptions("can't set socket" + std::string(strerror(errno)));
                 }
 
                 addr.sin6_family = AF_INET6;    
@@ -333,7 +352,7 @@ namespace gsocket
                     fprintf(stderr, "nametoindex failed\n");
                 };
                 printf("trying to put ip => %s\n", inet_iface.c_str());
-                if (inet_pton(AF_INET6, inet_iface.c_str(), &addr.sin6_addr) < 0)
+                if (inet_pton(AF_INET6, &inet_iface[0], &addr.sin6_addr) < 0)
                 { 
                     throw CustomExceptions("Invalid / unsupported inet6 address");
                 };
@@ -356,9 +375,12 @@ namespace gsocket
         /*  
             Connection-oriented sockets (stream) it tries to connect to host:port
             Connectionless sockets (dgram) it sets default host:port for further send() calls(faster than constantly calling sendto())
-            Returns 0 on sucess 1 on failure 
+            Returns 0 on sucess 1 on failure
+            @param host ip, gsocket::getIpByIface() can be used to retrieve addresses
+            @param port port
+            @param iface target iface, e.g. eth0. Required JUST when calling connect with Ipv6 sockets
         */
-        int connect(str_view host, int port)
+        int connect(str_view host, int port, const char *iface = nullptr)
         {
             if(domain == AF_INET){
                 sockaddr_in addr;
@@ -373,10 +395,13 @@ namespace gsocket
                     return 1;
                 }
             }else if(domain == AF_INET6){
+                if(iface == nullptr){
+                    throw CustomExceptions("iface can't be null when using ipv6 addresses\n");
+                }
                 sockaddr_in6 addr;
                 addr.sin6_family = AF_INET6;
                 addr.sin6_port = htons(port);
-                //addr.sin6_scope_id = if_nametoindex("eth0");
+                addr.sin6_scope_id = if_nametoindex(iface);
                 if(inet_pton(domain, &host[0], &addr.sin6_addr) <= 0){
                     return 1;
                 }
@@ -388,13 +413,9 @@ namespace gsocket
             return 0;
         }
         // Attempts connecting to target, addrinfo* struct can be retrieved from getaddrinfo()
-        int connect(addrinfo *target)
+        int connect(const addrinfo *target)
         {
             return ::connect(sock, target->ai_addr, target->ai_addrlen);
-        }
-
-        int connect(sockaddr *addr, socklen_t &addrlen){
-            return::connect(sock, addr, addrlen);
         }
         // Sends data through socket
         // returns bytes sent
@@ -531,24 +552,24 @@ namespace gsocket
     class tcp_client : public __sw
     {
         private:
-        int status = 0;
+        int __status = 0;
 
         public:    
-        tcp_client(str_view host, int port, Domain f = inet, Behaviour p = BLOCK)
+        tcp_client(str_view host, int port, Domain f = inet, Behaviour p = BLOCK, const char *iface = nullptr)
         :__sw(static_cast<int>(f), (static_cast<int>(p) ? (SOCK_STREAM) : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
         {
-            status = !__sw::connect(host, port);
+            __status = __sw::connect(host, port, iface);
         }
 
-        tcp_client(sockaddr* addr, socklen_t addrlen, Domain f = inet, Behaviour p = BLOCK)
+        tcp_client(const addrinfo *addr, Domain f = inet, Behaviour p = BLOCK)
         :__sw(static_cast<int>(f), (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0)
         {
-            status = !__sw::connect(addr, addrlen);
+            __status = __sw::connect(addr);
         }
 
-        int connected()
+        int failure()
         {
-            return status;
+            return __status;
         }
     };
 
@@ -580,7 +601,7 @@ namespace gsocket
             return gsocket::socket(__sw::accept());
         }
 
-        int up(){
+        int failure(){
             return __status;
         }
     };
