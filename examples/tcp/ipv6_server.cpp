@@ -1,7 +1,7 @@
 #include "prototype.hh"
 int main()
 {
-    gsocket::tcp_server sv(gsocket::getIpByIface("lo", Ipv6), 8080, Ipv6);
+    gsocket::tcp_server sv(gsocket::getIpByIface("lo", inet6), 8080, inet6);
     if(!sv.up()){
         fprintf(stderr, "couldn't bind\n");
         return 0;
