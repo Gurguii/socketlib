@@ -11,17 +11,26 @@
 #include <net/if.h>
 #include <errno.h>
 #include <memory>
+#include <thread>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
+#include <vector>
 
 #define _XOPEN_SOURCE_EXTENDED 1
-
+#define __TIMEOUT_MULTIPLIER 1000
 constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
 
-addrinfo *testing = nullptr;
 /*
     Some recv() flags:
     
     MSG_WAITFORONE - wait for at least one packet to return
 */
+struct newClient{
+    const char *host;
+    int port;
+    int sock;
+};
+
 class addressInfo{
     private:
     addrinfo *head;
@@ -35,7 +44,7 @@ class addressInfo{
         return head;
     };
     ~addressInfo(){
-        // free addrinfo memory when out of scope
+        // free addrinfo memory when object goes out of scope
         freeaddrinfo(head);
     }
 };
@@ -74,7 +83,6 @@ struct sock_data_{
     int port;
     std::string msg;
 };
-
 struct s_preferences{
     Domain family;   // INET or INET6
     Type type;       // stream or dgram
@@ -99,7 +107,7 @@ namespace gsocket{
             return message;
         }
     };
-    // Returns ipv4 addr of interface E.g eth0, lo, docker0
+    // Returns Domain(Ipv4|Ipv6) addr of interface E.g eth0, lo, docker0
     str getIpByIface(str_view ifa, Domain &&t = inet)
     {
         ifaddrs *addrs = nullptr;
@@ -153,7 +161,6 @@ namespace gsocket{
         if(addrs->ai_next != nullptr){
             throw CustomExceptions("this shouldn't have happened\n");
         }
-        testing = addrs;
         return addressInfo(addrs);
     }
     std::pair<str, str> getnameinfo(sockaddr* addr, socklen_t addrlen)
@@ -200,6 +207,7 @@ namespace gsocket{
             if(s == -1){
                 throw CustomExceptions("accept failed: " + std::string(strerror(errno)));
             }
+            ::send(s, "hola\n", 5, 0);
             return s;
         }
         
@@ -220,7 +228,7 @@ namespace gsocket{
         }
         
         // Returns std::pair containing socket's ip and port
-        std::pair<char*, int> getsockname()
+        std::pair<const char*, int> getsockname()
         { 
             if(domain == AF_INET){
                 sockaddr_in addr;
@@ -231,15 +239,15 @@ namespace gsocket{
                 sockaddr_in6 addr;
                 socklen_t addrlen = sizeof(addr);
                 ::getsockname(sock, reinterpret_cast<sockaddr*>(&addr), &addrlen);
-                char *ad;
-                inet_ntop(AF_INET6, &addr.sin6_addr, ad, INET6_ADDRSTRLEN);
-                printf("address => %s\n", ad);
-                return {ad, htons(addr.sin6_port)};
+                // isn't this bad if the f gets called often?
+                std::string ad(46, '\x00');
+                inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
+                return {reinterpret_cast<const char*>(&ad), htons(addr.sin6_port)};
             }
             return {nullptr, 0};
         }
         // Returns std::pair containing socket peer's ip and port
-        std::pair<char*, int> getpeername()
+        std::pair<const char*, int> getpeername()
         {
             if(domain == AF_INET){
                 sockaddr_in addr;
@@ -250,8 +258,9 @@ namespace gsocket{
                 sockaddr_in6 addr;
                 socklen_t addrlen = sizeof(addr);
                 ::getpeername(sock, reinterpret_cast<sockaddr*>(&addr), &addrlen);
-                // INET NTOP
-                return {};
+                std::string ad(46, '\x00');
+                inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
+                return {reinterpret_cast<const char*>(&ad), htons(addr.sin6_port)};
             }
         }
         // Bind to port ready to listen in any address
@@ -522,7 +531,9 @@ namespace gsocket{
         // socket wrapper
         socket(int s)
         :__sw(s)
-        {}
+        {
+            printf("wrapping client\n");
+        }
         // Raw socket constructor, it takes POSIX socket() arguments
         // socket() - https://man7.org/linux/man-pages/man2/socket.2.html
         socket(int domain, int type, int protocol)
@@ -572,6 +583,37 @@ namespace gsocket{
             return __status;
         }
     };
+    /* TODO THINK ABOUT HOW TO IMPLEMENT THIS*/
+    /*  Multiclient TCP server w datapolling multithreading and connection timeout */
+    class multiTcpServer : public __sw{
+        private:
+        long long totalClients = 0;
+        std::vector<std::thread> activeConnections;
+        uint8_t __status = 1;
+        gsocket::socket* newClient;
+        public:
+        // timeout = seconds
+        multiTcpServer(str_view addressIface, int port, int maxClients = 10, int timeout = 10, Domain dom = inet, int maxconns = 3, Behaviour p = BLOCK)
+        :__sw(static_cast<int>(dom), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
+        ,activeConnections(std::vector<std::thread>(maxClients))
+        {
+            if((__sw::bind(addressIface, port) || (__sw::listen(maxconns)))){
+                __status = 0;
+            }
+        }
+        void start(void (*connHandler)(gsocket::socket*)){
+            for(;;){
+                printf("waiting for connections\n");
+                newClient = new gsocket::socket(__sw::accept());
+                printf("got connection %s : %i\n", this->getpeername());
+                activeConnections.emplace_back(std::thread(connHandler, newClient));
+                totalClients++;   
+            }
+        }
+        int failure(){
+            return __status;
+        }
+    };
 
     class tcp_server : public __sw
     {
@@ -579,16 +621,15 @@ namespace gsocket{
         uint8_t __status = 1;
 
         public:
-        tcp_server(str_view addr_iface, int port, Domain f = inet, int maxconns = 3, Behaviour p = BLOCK)
+        tcp_server(str_view addr_iface, int port, Domain f = inet, int maxconns = 3, Behaviour p = NOBLOCK)
         :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
         {
-            if((__sw::bind(addr_iface, port) || __sw::listen(maxconns)))
-            {
+            if((__sw::bind(addr_iface, port) || __sw::listen(maxconns))){
                 __status = 0;
             }; 
         }
 
-        tcp_server(int port, Domain f = inet, int maxconns = 3, Behaviour p = BLOCK)
+        tcp_server(int port, Domain f = inet, int maxconns = 3, Behaviour p = NOBLOCK)
         :__sw(static_cast<int>(f), (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0){
 
             if((__sw::bind(port)) || ((__sw::listen(maxconns))))

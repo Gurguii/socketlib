@@ -9,16 +9,20 @@
 #include <errno.h> // NOT IN USE
 #include <iostream> // TEMP
 
-char* getname(const char *iface_name){
+std::string getname(const char *iface_name){
+    if(iface_name == nullptr){
+        fprintf(stderr, "iface can't be empty\n");
+        return nullptr;
+    }
     ifaddrs *addrs = nullptr;
     getifaddrs(&addrs);
-    char *myaddr = new char(46);
+    std::string addr(46, '\x00');
     for(auto a = addrs; a!=nullptr; a = a->ifa_next){
         if(a->ifa_addr->sa_family == AF_INET6){
-            inet_ntop(AF_INET6, &((sockaddr_in6*)(a->ifa_addr))->sin6_addr, myaddr, INET6_ADDRSTRLEN);
+            inet_ntop(AF_INET6, &((sockaddr_in6*)(a->ifa_addr))->sin6_addr, &addr[0], INET6_ADDRSTRLEN);
             if(!strcmp(iface_name, a->ifa_name)){
                 freeifaddrs(addrs);
-                return myaddr;
+                return addr;
             }
         }
     }
@@ -26,14 +30,19 @@ char* getname(const char *iface_name){
     return nullptr;
 }
 
+constexpr const char *iface = "eth0"; // CHANGE
+constexpr int port = 443; // CHANGE
+
 int main()
 {
     int fd = socket(AF_INET6, SOCK_STREAM, 0);
+    
     sockaddr_in6 addr;
     addr.sin6_family = AF_INET6;
-    addr.sin6_port = htons(80);
+    addr.sin6_port = htons(port);
     addr.sin6_scope_id = if_nametoindex("eth0");
-    if(!inet_pton(AF_INET6, getname("eth0"), &addr.sin6_addr)){
+
+    if(!(inet_pton(AF_INET6, getname(iface).c_str(), &addr.sin6_addr))){
         fprintf(stderr, "couldn't assign address\n");
         return 0;
     };
@@ -42,8 +51,10 @@ int main()
         fprintf(stderr, "couldn't connect\n");
         return 0;
     }   
+
     printf("[+] - connected\n");
     std::string msg(1024, '\x00');
+
     for(;;){
         printf("msg: ");
         getline(std::cin, msg);
@@ -53,4 +64,5 @@ int main()
         }
         send(fd, &msg[0], msg.size(), 0);
     }
+    close(fd);
 }   

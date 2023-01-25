@@ -56,6 +56,12 @@
         "thread": "cpp",
         "stop_token": "cpp",
         "semaphore": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "cassert": "cpp",
+        "cerrno": "cpp",
+        "climits": "cpp",
+        "cstdbool": "cpp",
+        "ios": "cpp",
+        "queue": "cpp"
     }
 }
