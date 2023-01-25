@@ -1,10 +1,10 @@
 #include "prototype.hh"
 
-void handler(gsocket::socket* client){
+void handler(Client* client){
+    auto wrappedClient = gsocket::socket((*client).fd);
     try{
         std::string data;
-
-        while((data = client->recv()).size()){
+        while((data = wrappedClient.recv()).size()){
             printf("data: %s\n", data.c_str());
         }
 

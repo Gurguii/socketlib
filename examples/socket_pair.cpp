@@ -9,7 +9,7 @@ int main()
     str message = "hi from fd0\n";
 
     /* */
-    auto [fd0, fd1] = gsocket::getsocketpair(UDP); // argument s_type must be TCP/UDP (or s_types::<tcp/udp>)
+    auto [fd0, fd1] = gsocket::getsocketpair(dgram); // argument s_type must be TCP/UDP (or s_types::<tcp/udp>)
 
     int bytes_sent = fd0.send(message);
     std::cout << "fd0 sent " << bytes_sent << " bytes of data\n";

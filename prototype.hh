@@ -25,10 +25,18 @@ constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when readi
     
     MSG_WAITFORONE - wait for at least one packet to return
 */
-struct newClient{
+struct Client{
+    int fd;
     const char *host;
     int port;
-    int sock;
+    Client(int a, const char *b, int c)
+    :fd(a), host(b), port(c)
+    {
+        // constructor
+    }
+    ~Client(){
+        printf("destroying client %s : %i\n", host, port);
+    }
 };
 
 class addressInfo{
@@ -79,10 +87,11 @@ enum class Behaviour : uint8_t
 };
 
 struct sock_data_{
-    const char *host;
+    std::string host;
     int port;
     std::string msg;
 };
+
 struct s_preferences{
     Domain family;   // INET or INET6
     Type type;       // stream or dgram
@@ -207,7 +216,6 @@ namespace gsocket{
             if(s == -1){
                 throw CustomExceptions("accept failed: " + std::string(strerror(errno)));
             }
-            ::send(s, "hola\n", 5, 0);
             return s;
         }
         
@@ -228,7 +236,7 @@ namespace gsocket{
         }
         
         // Returns std::pair containing socket's ip and port
-        std::pair<const char*, int> getsockname()
+        std::pair<std::string, int> getsockname()
         { 
             if(domain == AF_INET){
                 sockaddr_in addr;
@@ -242,7 +250,7 @@ namespace gsocket{
                 // isn't this bad if the f gets called often?
                 std::string ad(46, '\x00');
                 inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
-                return {reinterpret_cast<const char*>(&ad), htons(addr.sin6_port)};
+                return {ad, htons(addr.sin6_port)};
             }
             return {nullptr, 0};
         }
@@ -262,6 +270,7 @@ namespace gsocket{
                 inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
                 return {reinterpret_cast<const char*>(&ad), htons(addr.sin6_port)};
             }
+            return {nullptr, 0};
         }
         // Bind to port ready to listen in any address
         int bind(int port, const char *iface = nullptr)
@@ -517,11 +526,22 @@ namespace gsocket{
         */
         sock_data_ recvfrom(int N = BUFF_SIZE)
         {
-            sockaddr_in addr;
-            int addrlen = sizeof(addr);
-            str data(BUFF_SIZE, '\x00');
-            ::recvfrom(sock, &data[0], N, 0, (sockaddr *)&addr, (socklen_t *)&addrlen);
-            return sock_data_{inet_ntoa(addr.sin_addr), htons(addr.sin_port), data};
+            if(domain == AF_INET){
+                sockaddr_in addr;
+                socklen_t addrlen = sizeof(addr);
+                str data(N, '\x00');
+                ::recvfrom(sock, &data[0], N, 0, reinterpret_cast<sockaddr*>(&addr), &addrlen);
+                return sock_data_{inet_ntoa(addr.sin_addr), htons(addr.sin_port), data};
+            }else if(domain == AF_INET6){
+                sockaddr_in6 addr;
+                socklen_t addrlen = sizeof(addr);
+                str data(N, '\x00');
+                ::recvfrom(sock, &data[0], N, 0, reinterpret_cast<sockaddr*>(&addr), &addrlen);
+                str ad(46, '\x00');
+                inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
+                return sock_data_{ad, htons(addr.sin6_port), data};
+            }
+            return sock_data_{nullptr, 0, 0};
         }
     };
 
@@ -532,7 +552,6 @@ namespace gsocket{
         socket(int s)
         :__sw(s)
         {
-            printf("wrapping client\n");
         }
         // Raw socket constructor, it takes POSIX socket() arguments
         // socket() - https://man7.org/linux/man-pages/man2/socket.2.html
@@ -544,7 +563,6 @@ namespace gsocket{
         :__sw(static_cast<int>(domain), (b == BLOCK ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0)
         {}
     };
-    
     class tcp_socket : public __sw
     {
         public:
@@ -583,37 +601,6 @@ namespace gsocket{
             return __status;
         }
     };
-    /* TODO THINK ABOUT HOW TO IMPLEMENT THIS*/
-    /*  Multiclient TCP server w datapolling multithreading and connection timeout */
-    class multiTcpServer : public __sw{
-        private:
-        long long totalClients = 0;
-        std::vector<std::thread> activeConnections;
-        uint8_t __status = 1;
-        gsocket::socket* newClient;
-        public:
-        // timeout = seconds
-        multiTcpServer(str_view addressIface, int port, int maxClients = 10, int timeout = 10, Domain dom = inet, int maxconns = 3, Behaviour p = BLOCK)
-        :__sw(static_cast<int>(dom), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
-        ,activeConnections(std::vector<std::thread>(maxClients))
-        {
-            if((__sw::bind(addressIface, port) || (__sw::listen(maxconns)))){
-                __status = 0;
-            }
-        }
-        void start(void (*connHandler)(gsocket::socket*)){
-            for(;;){
-                printf("waiting for connections\n");
-                newClient = new gsocket::socket(__sw::accept());
-                printf("got connection %s : %i\n", this->getpeername());
-                activeConnections.emplace_back(std::thread(connHandler, newClient));
-                totalClients++;   
-            }
-        }
-        int failure(){
-            return __status;
-        }
-    };
 
     class tcp_server : public __sw
     {
@@ -624,24 +611,53 @@ namespace gsocket{
         tcp_server(str_view addr_iface, int port, Domain f = inet, int maxconns = 3, Behaviour p = NOBLOCK)
         :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
         {
-            if((__sw::bind(addr_iface, port) || __sw::listen(maxconns))){
-                __status = 0;
-            }; 
+            __sw::bind(addr_iface, port);
+            __sw::listen(maxconns);
         }
 
         tcp_server(int port, Domain f = inet, int maxconns = 3, Behaviour p = NOBLOCK)
         :__sw(static_cast<int>(f), (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0){
-
-            if((__sw::bind(port)) || ((__sw::listen(maxconns))))
-            {
-                __status = 0;
-            };
+            __sw::bind(port);
+            __sw::listen(maxconns);
         }
 
         gsocket::socket accept_connection(){
             return gsocket::socket(__sw::accept());
         }
+    };
 
+    /* TODO THINK ABOUT HOW TO IMPLEMENT THIS */
+    /*  Multiclient TCP server w datapolling multithreading and connection timeout */
+    class multiTcpServer : public __sw{
+        private:
+        long long totalClients = 0;
+        std::vector<std::thread> activeConnections;
+        uint8_t __status = 1;
+        //Client *newClient;
+        public:
+        // timeout = seconds
+        multiTcpServer(str_view addressIface, int port, int maxClients = 10, int timeout = 10, Domain dom = inet, int maxconns = 3, Behaviour p = BLOCK)
+        :__sw(static_cast<int>(dom), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
+        ,activeConnections(std::vector<std::thread>(maxClients))
+        {
+            if((__sw::bind(addressIface, port) || (__sw::listen(maxconns)))){
+                __status = 0;
+            }
+        }
+        Client* cptr;
+        void start(void (*connHandler)(Client*)){
+            /* Maybe add a thread that eventually checks Clients status */
+            for(;;){
+                printf("waiting for connections\n");
+                auto&& [host, port] = getpeername();
+                //cptr = new Client(__sw::accept(), host, port);
+                auto newClient = new Client(__sw::accept(), host, port);
+                //newClient = new gsocket::socket(__sw::accept());
+                printf("got connection %s : %i\n", host, port);
+                activeConnections.emplace_back(std::thread(connHandler, newClient));
+                totalClients++;   
+            }
+        }
         int failure(){
             return __status;
         }
@@ -659,18 +675,15 @@ namespace gsocket{
     class udp_client : public __sw{
         public:
         // set default host port for future send() calls
-        udp_client(str_view host, int port, Domain f = inet, Behaviour p = BLOCK)
+        udp_client(str_view host, int port, Domain f = inet, Behaviour p = BLOCK, const char *iface = nullptr)
         :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK), 0)
         {
-            __sw::connect(host, port);
+            __sw::connect(host, port, iface);
         }
     };
 
     class udp_server : public __sw
     {
-        private:
-        uint8_t __status = 0;
-
         public:
         /*
             bind to port and listen in given address/iface
@@ -680,19 +693,14 @@ namespace gsocket{
         udp_server(str_view addr_iface, int port, Domain f = inet, Behaviour p = BLOCK)
         :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK), 0)
         {
-            __status == !__sw::bind(addr_iface, port);   
+            __sw::bind(addr_iface, port);   
         }
 
         // bind to port and listen in any local ipv4 address
         udp_server(int port, Domain f = inet, Behaviour p = BLOCK)
         :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK), 0)
         {
-            __status == !__sw::bind(port); 
-        }
-
-        int binded()
-        {
-            return __status;
+            __sw::bind(port); 
         }
     };
     /* 
