@@ -13,7 +13,7 @@
 #include <vector>
 #include <array>
 
-constexpr uint8_t TIMEOUT_SECONDS = 20; // CHANGE
+constexpr int __TIMEOUT_MULTIPLIER = 1000; // CHANGE
 constexpr uint8_t MAX_CLIENTS = 2; // CHANGE
 
 
@@ -47,12 +47,12 @@ void handleClient(int client_fd, const char *host, int port){
         .fd = client_fd,
         .events = POLLIN,
     };
-    int recvStatus, ret = 0, available_bytes;
+    int recvStatus, evFds = 0, available_bytes;
     std::string buff(1024, '\x00');
     pollReq.fd = client_fd;
     for(;;){
-        ret = poll(&pollReq, 1, 1000 * TIMEOUT_SECONDS);
-        if(ret > 0 && (pollReq.revents & POLLIN)){
+        evFds = poll(&pollReq, 1, 4 * __TIMEOUT_MULTIPLIER);
+        if(evFds > 0 && (pollReq.revents & POLLIN)){
             // data available
             ioctl(client_fd, FIONREAD, &available_bytes);
             if(buff.size() < available_bytes){

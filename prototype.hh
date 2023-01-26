@@ -15,6 +15,7 @@
 #include <sys/ioctl.h>
 #include <sys/poll.h>
 #include <vector>
+#include <array>
 
 #define _XOPEN_SOURCE_EXTENDED 1
 #define __TIMEOUT_MULTIPLIER 1000
@@ -34,14 +35,11 @@ struct Client{
     {
         // constructor
     }
-    ~Client(){
-        printf("destroying client %s : %i\n", host, port);
-    }
 };
 
 class addressInfo{
     private:
-    addrinfo *head;
+    addrinfo *const head;
     public:
     addressInfo(addrinfo *addrs)
     :head(addrs)
@@ -168,7 +166,7 @@ namespace gsocket{
             //throw CustomExceptions("getaddrinfo failed\n");
         }
         if(addrs->ai_next != nullptr){
-            throw CustomExceptions("this shouldn't have happened\n");
+            throw CustomExceptions("error - this shouldn't have happened, getaddrinfo() returned more than 1 socket using hints\n");
         }
         return addressInfo(addrs);
     }
@@ -213,9 +211,6 @@ namespace gsocket{
                 socklen_t addrlen = sizeof(addr);
                 s = ::accept(sock, (sockaddr *)&addr, &addrlen);
             }
-            if(s == -1){
-                throw CustomExceptions("accept failed: " + std::string(strerror(errno)));
-            }
             return s;
         }
         
@@ -236,7 +231,7 @@ namespace gsocket{
         }
         
         // Returns std::pair containing socket's ip and port
-        std::pair<std::string, int> getsockname()
+        std::pair<const char *, int> getsockname()
         { 
             if(domain == AF_INET){
                 sockaddr_in addr;
@@ -250,7 +245,7 @@ namespace gsocket{
                 // isn't this bad if the f gets called often?
                 std::string ad(46, '\x00');
                 inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
-                return {ad, htons(addr.sin6_port)};
+                return {&ad[0], htons(addr.sin6_port)};
             }
             return {nullptr, 0};
         }
@@ -431,9 +426,12 @@ namespace gsocket{
             return 0;
         }
         // Attempts connecting to target, addrinfo* struct can be retrieved from getaddrinfo()
-        int connect(const addrinfo *target)
-        {
+        int connect(const addrinfo *target){
             return ::connect(sock, target->ai_addr, target->ai_addrlen);
+        }
+
+        int connect(addressInfo &target){
+            return ::connect(sock, target.get()->ai_addr, target.get()->ai_addrlen);
         }
         // Sends data through socket
         // returns bytes sent
@@ -472,6 +470,31 @@ namespace gsocket{
             ::read(sock, &buffer[0], N);
             return buffer;
         }  
+        // Awaits til data is received, reads every byte available into buffer
+        // returns 0 if connection closed, -1 for errors, -2 for timeout else bytes read
+        // @param buffer pointer to string that will store the data 
+        // @param timeout seconds, by default blocks until data is available
+        int awaitData(std::string *buffer, int timeout = -1){
+            auto _s_poll = pollfd{
+                .fd = sock,
+                .events = POLLIN
+            };
+            int event, avBytes, rStatus;
+            for(;;){
+                event = poll(&_s_poll, 1, (timeout == -1 ? -1 : (timeout * __TIMEOUT_MULTIPLIER)));
+                if(event > 0 && (_s_poll.revents & POLLIN)){
+                    // data available
+                    ioctl(sock, FIONREAD, &avBytes);
+                    if(buffer->size() < avBytes){
+                        buffer->resize(avBytes);
+                    }
+                    //std::string buff(avBytes, '\x00');
+                    return ::recv(sock, buffer->data(), avBytes, 0);
+                }
+                // timeout
+                return -2;
+            }
+        }
         // Returns all data from socket
         str recv()
         {
@@ -512,11 +535,13 @@ namespace gsocket{
             t.sin_family = domain;
             t.sin_port = htons(port);
             inet_pton(AF_INET, &host[0], &t.sin_addr);
-            int n = ::sendto(sock, &data[0], data.size(), 0, (struct sockaddr *)&t, sizeof(t));
+            int n = ::sendto(sock, &data[0], data.size(), 0, reinterpret_cast<sockaddr*>(&t), sizeof(t));
             return n;
         }
         /* 
-            Receive N bytes of data (default BUFF_SIZE = 1024) and return rhost, rport, and data received 
+            Receive N bytes of data (default 1024)
+            returns sock_data_ struct with info about peer socket and
+            data received
             struct sock_data_{
                 const char *host;
                 int port;
@@ -571,7 +596,6 @@ namespace gsocket{
         {
             // default constructor
         }
-
         gsocket::socket accept_connection()
         {
             return __sw::accept();
@@ -604,18 +628,15 @@ namespace gsocket{
 
     class tcp_server : public __sw
     {
-        private:
-        uint8_t __status = 1;
-
         public:
-        tcp_server(str_view addr_iface, int port, Domain f = inet, int maxconns = 3, Behaviour p = NOBLOCK)
+        tcp_server(str_view addr_iface, int port, Domain f = inet, int maxconns = 3, Behaviour p = BLOCK)
         :__sw(static_cast<int>(f), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
         {
             __sw::bind(addr_iface, port);
             __sw::listen(maxconns);
         }
 
-        tcp_server(int port, Domain f = inet, int maxconns = 3, Behaviour p = NOBLOCK)
+        tcp_server(int port, Domain f = inet, int maxconns = 3, Behaviour p = BLOCK)
         :__sw(static_cast<int>(f), (static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)), 0){
             __sw::bind(port);
             __sw::listen(maxconns);
@@ -644,6 +665,7 @@ namespace gsocket{
                 __status = 0;
             }
         }
+        
         Client* cptr;
         void start(void (*connHandler)(Client*)){
             /* Maybe add a thread that eventually checks Clients status */
