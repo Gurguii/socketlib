@@ -84,15 +84,15 @@ enum class Behaviour : uint8_t
     #define BLOCK Behaviour::block
 };
 
-struct sock_data_{
+struct msgFrom{
     std::string host;
     int port;
     std::string msg;
 };
 
 struct s_preferences{
-    Domain family;   // INET or INET6
-    Type type;       // stream or dgram
+    Domain family;   // inet(AF_INET) / inet6(AF_INET6)
+    Type type;       // stream(SOCK_STREAM) / dgram(SOCK_DGRAM)
     int protocol;    // 
     int flags;       // 
 };
@@ -114,6 +114,11 @@ namespace gsocket{
             return message;
         }
     };
+    int availableBytes(int __sock){
+        int avBytes;
+        ioctl(__sock, FIONREAD, &avBytes);
+        return avBytes;
+    }
     // Returns Domain(Ipv4|Ipv6) addr of interface E.g eth0, lo, docker0
     str getIpByIface(str_view ifa, Domain &&t = inet)
     {
@@ -182,46 +187,33 @@ namespace gsocket{
     }
     class __sw // POSIX socket methods wrapper
     {
+        private:
+        int sock, domain, type, protocol;
+
         protected:
         __sw(int d, int t, int p)
+        :domain(d), type(t), protocol(p), sock(::socket(d, t, p))
         {
             // main constructor
-            domain = d;
-            type = t;
-            protocol = p;
-            sock = ::socket(d, t, p);
         }
         __sw(int __sock)
+        :sock(__sock)
         {
             // socket wrapper
-            sock = __sock;
         }
         ~__sw(){
+            // just in case
             ::close(sock);
-        }
-        int accept()
-        {
-            int s;
-            if(domain == AF_INET){
-                sockaddr_in addr;
-                socklen_t addrlen = sizeof(addr);
-                s = ::accept(sock, (sockaddr *)&addr, &addrlen);       
-            }else if(domain == AF_INET6){
-                sockaddr_in6 addr;
-                socklen_t addrlen = sizeof(addr);
-                s = ::accept(sock, (sockaddr *)&addr, &addrlen);
-            }
-            return s;
         }
         
         public:
-        int sock, domain, type, protocol;
-
+        int getSock(){
+            return sock;
+        }
         void close()
         {
             ::close(sock);
         }
-        
         // idk if this is worth, the idea is to avoid destructing and constructing
         // to make a new socket of same characteristics
         void reset()
@@ -229,7 +221,6 @@ namespace gsocket{
             ::close(sock);
             sock = ::socket(domain, type, protocol);
         }
-        
         // Returns std::pair containing socket's ip and port
         std::pair<const char *, int> getsockname()
         { 
@@ -266,6 +257,20 @@ namespace gsocket{
                 return {reinterpret_cast<const char*>(&ad), htons(addr.sin6_port)};
             }
             return {nullptr, 0};
+        }
+        int accept()
+        {
+            int s;
+            if(domain == AF_INET){
+                sockaddr_in addr;
+                socklen_t addrlen = sizeof(addr);
+                s = ::accept(sock, (sockaddr *)&addr, &addrlen);       
+            }else if(domain == AF_INET6){
+                sockaddr_in6 addr;
+                socklen_t addrlen = sizeof(addr);
+                s = ::accept(sock, (sockaddr *)&addr, &addrlen);
+            }
+            return s;
         }
         // Bind to port ready to listen in any address
         int bind(int port, const char *iface = nullptr)
@@ -480,22 +485,46 @@ namespace gsocket{
                 .events = POLLIN
             };
             int event, avBytes, rStatus;
-            for(;;){
-                event = poll(&_s_poll, 1, (timeout == -1 ? -1 : (timeout * __TIMEOUT_MULTIPLIER)));
-                if(event > 0 && (_s_poll.revents & POLLIN)){
-                    // data available
-                    ioctl(sock, FIONREAD, &avBytes);
-                    if(buffer->size() < avBytes){
-                        buffer->resize(avBytes);
-                    }
-                    //std::string buff(avBytes, '\x00');
-                    return ::recv(sock, buffer->data(), avBytes, 0);
+            event = poll(&_s_poll, 1, (timeout == -1 ? -1 : (timeout * __TIMEOUT_MULTIPLIER)));
+            if(event > 0 && (_s_poll.revents & POLLIN)){
+                // data available
+                ioctl(sock, FIONREAD, &avBytes);
+                if(buffer->size() < avBytes){
+                    buffer->resize(avBytes);
                 }
-                // timeout
-                return -2;
+                return ::recv(sock, buffer->data(), avBytes, 0);
             }
+            // timeout
+            return -2;
         }
-        // Returns all data from socket
+
+        int awaitDataFrom(msgFrom *incomingHost, int timeout = -1){
+            auto _s_poll = pollfd{
+                .fd = sock,
+                .events = POLLIN
+            };
+            int event, avBytes, rStatus;
+            event = poll(&_s_poll, 1, (timeout == -1 ? -1 : (timeout * __TIMEOUT_MULTIPLIER)));
+            if(event > 0 && (_s_poll.revents & POLLIN)){
+                // data available
+                ioctl(sock, FIONREAD, &avBytes);
+                if(incomingHost->msg.size() < avBytes){
+                    incomingHost->msg.resize(avBytes);
+                }
+                sockaddr addr;
+                socklen_t &&addrlen = sizeof(addr);
+                int &&n = ::recvfrom(sock, incomingHost->msg.data(), avBytes, 0, &addr, &addrlen);
+                if(n != -1){
+                    incomingHost->host = inet_ntoa(reinterpret_cast<sockaddr_in*>(&addr)->sin_addr);
+                    incomingHost->port = htons(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
+                }
+                return n;
+                //return ::recv(sock, incomingHost->msg.data(), avBytes, 0);
+            }
+            // timeout
+            return -2;
+        }
+        // Returns all data from socket (blocks until data available or error)
         str recv()
         {
             str data;
@@ -531,32 +560,40 @@ namespace gsocket{
         // Send 'data' to 'host' on 'port', returns bytes sent
         int sendto(str_view host, int port, str_view data)
         {
-            sockaddr_in t;
-            t.sin_family = domain;
-            t.sin_port = htons(port);
-            inet_pton(AF_INET, &host[0], &t.sin_addr);
-            int n = ::sendto(sock, &data[0], data.size(), 0, reinterpret_cast<sockaddr*>(&t), sizeof(t));
+            int n;
+            if(domain == AF_INET){
+                sockaddr_in t;
+                t.sin_family = domain;
+                t.sin_port = htons(port);
+                inet_pton(AF_INET, &host[0], &t.sin_addr);
+                n = ::sendto(sock, &data[0], data.size(), 0, reinterpret_cast<sockaddr*>(&t), sizeof(t));
+            }else if(domain == AF_INET6){
+                sockaddr_in6 t;
+                t.sin6_family = domain;
+                t.sin6_port = htons(port);
+                /* TODO: FINISH THIS */
+            }
             return n;
         }
         /* 
             Receive N bytes of data (default 1024)
-            returns sock_data_ struct with info about peer socket and
+            returns msgFrom struct with info about peer socket and
             data received
-            struct sock_data_{
+            struct msgFrom{
                 const char *host;
                 int port;
                 const char *msg;
             }
             @param N amount of data to receive
         */
-        sock_data_ recvfrom(int N = BUFF_SIZE)
+        msgFrom recvfrom(int N = BUFF_SIZE)
         {
             if(domain == AF_INET){
                 sockaddr_in addr;
                 socklen_t addrlen = sizeof(addr);
                 str data(N, '\x00');
                 ::recvfrom(sock, &data[0], N, 0, reinterpret_cast<sockaddr*>(&addr), &addrlen);
-                return sock_data_{inet_ntoa(addr.sin_addr), htons(addr.sin_port), data};
+                return msgFrom{inet_ntoa(addr.sin_addr), htons(addr.sin_port), data};
             }else if(domain == AF_INET6){
                 sockaddr_in6 addr;
                 socklen_t addrlen = sizeof(addr);
@@ -564,9 +601,9 @@ namespace gsocket{
                 ::recvfrom(sock, &data[0], N, 0, reinterpret_cast<sockaddr*>(&addr), &addrlen);
                 str ad(46, '\x00');
                 inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
-                return sock_data_{ad, htons(addr.sin6_port), data};
+                return msgFrom{ad, htons(addr.sin6_port), data};
             }
-            return sock_data_{nullptr, 0, 0};
+            return msgFrom{nullptr, 0, 0};
         }
     };
 
@@ -586,7 +623,8 @@ namespace gsocket{
         // NOTE -> gsocket::socket(AF_INET, SOCK_STREAM, 0) == SAME AS == gsocket::socket(INET, stream, BLOCK);
         socket(Domain domain, Type type, Behaviour b)
         :__sw(static_cast<int>(domain), (b == BLOCK ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0)
-        {}
+        {
+        }
     };
     class tcp_socket : public __sw
     {
