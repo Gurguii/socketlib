@@ -15,38 +15,26 @@
 #include <sys/ioctl.h>
 #include <sys/poll.h>
 #include <vector>
-#include <array>
+#include <variant>
+#include <mutex>
 
 #define _XOPEN_SOURCE_EXTENDED 1
 #define __TIMEOUT_MULTIPLIER 1000
+#define __thread_sleep_ms(x) std::this_thread::sleep_for(std::chrono::milliseconds(x))
+#define __thread_sleep_s(x) std::this_thread::sleep_for(std::chrono::seconds(x))
+
 constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when reading
 
-/*
-    Some recv() flags:
-    
-    MSG_WAITFORONE - wait for at least one packet to return
-*/
-struct Client{
-    int fd;
-    const char *host;
-    int port;
-    Client(int a, const char *b, int c)
-    :fd(a), host(b), port(c)
-    {
-        // constructor
-    }
-};
-
-class addressInfo{
+struct addressInfo{
     private:
-    addrinfo *const head;
+    addrinfo* const head;
     public:
     addressInfo(addrinfo *addrs)
     :head(addrs)
     {
         // constructor
     }
-    const addrinfo *get(){
+    const addrinfo* get(){
         return head;
     };
     ~addressInfo(){
@@ -98,6 +86,8 @@ struct s_preferences{
 };
 
 namespace gsocket{
+
+
     using str = std::string;
     using str_view = std::string_view;
 
@@ -177,13 +167,21 @@ namespace gsocket{
     }
     std::pair<str, str> getnameinfo(sockaddr* addr, socklen_t addrlen)
     {
-        str h(46, '\x00');
-        str s(46, '\x00');
-        if(::getnameinfo(addr, addrlen, &h[0], 46, &s[0], 46, 0))
+        str _host(46, '\x00'), _service(46, '\x00');
+        if(::getnameinfo(addr, addrlen, &_host[0], 46, &_service[0], 46, 0))
         {
             throw CustomExceptions("getnameinfo failed\n");
         }
-        return {h,s};
+        return {_host,_service};
+    }
+    std::pair<str, str> getnameinfo(addressInfo* addr)
+    {
+        str _host(46, '\x00'), _service(46, '\x00');
+        if(::getnameinfo(addr->get()->ai_addr, addr->get()->ai_addrlen, &_host[0], 46, &_service[0], 46, 0))
+        {
+            throw CustomExceptions("getnameinfo failed\n");
+        }
+        return {_host,_service};
     }
     class __sw // POSIX socket methods wrapper
     {
@@ -222,7 +220,7 @@ namespace gsocket{
             sock = ::socket(domain, type, protocol);
         }
         // Returns std::pair containing socket's ip and port
-        std::pair<const char *, int> getsockname()
+        std::pair<std::string, int> getsockname()
         { 
             if(domain == AF_INET){
                 sockaddr_in addr;
@@ -236,12 +234,12 @@ namespace gsocket{
                 // isn't this bad if the f gets called often?
                 std::string ad(46, '\x00');
                 inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
-                return {&ad[0], htons(addr.sin6_port)};
+                return {ad, htons(addr.sin6_port)};
             }
             return {nullptr, 0};
         }
         // Returns std::pair containing socket peer's ip and port
-        std::pair<const char*, int> getpeername()
+        std::pair<std::string, int> getpeername()
         {
             if(domain == AF_INET){
                 sockaddr_in addr;
@@ -254,7 +252,7 @@ namespace gsocket{
                 ::getpeername(sock, reinterpret_cast<sockaddr*>(&addr), &addrlen);
                 std::string ad(46, '\x00');
                 inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
-                return {reinterpret_cast<const char*>(&ad), htons(addr.sin6_port)};
+                return {ad, htons(addr.sin6_port)};
             }
             return {nullptr, 0};
         }
@@ -366,9 +364,9 @@ namespace gsocket{
 
                 addr.sin6_family = AF_INET6;    
                 addr.sin6_port = htons(port);
-                if(!(addr.sin6_scope_id = if_nametoindex("eth0"))){
-                    fprintf(stderr, "nametoindex failed\n");
-                };
+                //if(!(addr.sin6_scope_id = if_nametoindex("eth0"))){
+                //    fprintf(stderr, "nametoindex failed\n");
+                //};
                 printf("trying to put ip => %s\n", inet_iface.c_str());
                 if (inet_pton(AF_INET6, &inet_iface[0], &addr.sin6_addr) < 0)
                 { 
@@ -498,7 +496,7 @@ namespace gsocket{
             return -2;
         }
 
-        int awaitDataFrom(msgFrom *incomingHost, int timeout = -1){
+        int awaitDataFrom(msgFrom *__sockHostData, int timeout = -1){
             auto _s_poll = pollfd{
                 .fd = sock,
                 .events = POLLIN
@@ -508,18 +506,18 @@ namespace gsocket{
             if(event > 0 && (_s_poll.revents & POLLIN)){
                 // data available
                 ioctl(sock, FIONREAD, &avBytes);
-                if(incomingHost->msg.size() < avBytes){
-                    incomingHost->msg.resize(avBytes);
+                if(__sockHostData->msg.size() < avBytes){
+                    __sockHostData->msg.resize(avBytes);
                 }
                 sockaddr addr;
                 socklen_t &&addrlen = sizeof(addr);
-                int &&n = ::recvfrom(sock, incomingHost->msg.data(), avBytes, 0, &addr, &addrlen);
+                int &&n = ::recvfrom(sock, __sockHostData->msg.data(), avBytes, 0, &addr, &addrlen);
                 if(n != -1){
-                    incomingHost->host = inet_ntoa(reinterpret_cast<sockaddr_in*>(&addr)->sin_addr);
-                    incomingHost->port = htons(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
+                    __sockHostData->host = inet_ntoa(reinterpret_cast<sockaddr_in*>(&addr)->sin_addr);
+                    __sockHostData->port = htons(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
                 }
                 return n;
-                //return ::recv(sock, incomingHost->msg.data(), avBytes, 0);
+                //return ::recv(sock, __sockHostData->msg.data(), avBytes, 0);
             }
             // timeout
             return -2;
@@ -571,7 +569,8 @@ namespace gsocket{
                 sockaddr_in6 t;
                 t.sin6_family = domain;
                 t.sin6_port = htons(port);
-                /* TODO: FINISH THIS */
+                inet_pton(AF_INET6, &host[0], &t.sin6_addr);
+                n = ::sendto(sock, &data[0], data.size(), 0, reinterpret_cast<sockaddr*>(&t), sizeof(t));
             }
             return n;
         }
@@ -685,44 +684,6 @@ namespace gsocket{
         }
     };
 
-    /* TODO THINK ABOUT HOW TO IMPLEMENT THIS */
-    /*  Multiclient TCP server w datapolling multithreading and connection timeout */
-    class multiTcpServer : public __sw{
-        private:
-        long long totalClients = 0;
-        std::vector<std::thread> activeConnections;
-        uint8_t __status = 1;
-        //Client *newClient;
-        public:
-        // timeout = seconds
-        multiTcpServer(str_view addressIface, int port, int maxClients = 10, int timeout = 10, Domain dom = inet, int maxconns = 3, Behaviour p = BLOCK)
-        :__sw(static_cast<int>(dom), static_cast<int>(p) ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK), 0)
-        ,activeConnections(std::vector<std::thread>(maxClients))
-        {
-            if((__sw::bind(addressIface, port) || (__sw::listen(maxconns)))){
-                __status = 0;
-            }
-        }
-        
-        Client* cptr;
-        void start(void (*connHandler)(Client*)){
-            /* Maybe add a thread that eventually checks Clients status */
-            for(;;){
-                printf("waiting for connections\n");
-                auto&& [host, port] = getpeername();
-                //cptr = new Client(__sw::accept(), host, port);
-                auto newClient = new Client(__sw::accept(), host, port);
-                //newClient = new gsocket::socket(__sw::accept());
-                printf("got connection %s : %i\n", host, port);
-                activeConnections.emplace_back(std::thread(connHandler, newClient));
-                totalClients++;   
-            }
-        }
-        int failure(){
-            return __status;
-        }
-    };
-
     class udp_socket : public __sw{
         public:
         // Behaviour = BLOCK | NOBLOCK
@@ -763,6 +724,7 @@ namespace gsocket{
             __sw::bind(port); 
         }
     };
+
     /* 
         Returns 2 AF_LOCAL sockets (tcp/udp) wrapped with gsocket::socket() class 
         socketpair (CHECK NOTES) - https://man7.org/linux/man-pages/man2/socketpair.2.html
@@ -773,7 +735,7 @@ namespace gsocket{
         std::pair<int, int>fds;
         if(::socketpair(AF_LOCAL, (static_cast<int>(b) ? static_cast<int>(type) : (static_cast<int>(type) | SOCK_NONBLOCK)), 0, &fds.first))
         {
-            throw CustomExceptions("Couldn't create socketpair");
+            throw CustomExceptions("socketpair error - "+std::string(strerror(errno)));
         }
         return {gsocket::socket(fds.first), gsocket::socket(fds.second)}; 
     }

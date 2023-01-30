@@ -1,4 +1,2 @@
 todo.txt
-cl.cpp
-sv.cpp
-.a.cpp
+*.cpp
