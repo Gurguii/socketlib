@@ -28,6 +28,11 @@ constexpr int BUFF_SIZE = 1024; // read(), recv() default buffer size when readi
 struct addressInfo{
     private:
     addrinfo* const head;
+    ~addressInfo(){
+        // free addrinfo memory when object goes out of scope
+        printf("addrinfo running out of scope\n"),
+        freeaddrinfo(head);
+    }
     public:
     addressInfo(addrinfo *addrs)
     :head(addrs)
@@ -37,10 +42,6 @@ struct addressInfo{
     const addrinfo* get(){
         return head;
     };
-    ~addressInfo(){
-        // free addrinfo memory when object goes out of scope
-        freeaddrinfo(head);
-    }
 };
 
 enum class Domain : uint8_t{

@@ -1,6 +1,5 @@
-#include "socket_wrapper.cpp"
-#include "socket.cpp"
-#include <vector>
+#include "src/socket_wrapper.cpp"
+#include "src/socket.cpp"
 int main(){
     gsocket::Socket s(inet, tcp, BLOCK);
     if(s.bind("127.0.0.1", 8000)){

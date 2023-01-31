@@ -3,8 +3,8 @@ constexpr int __TIMEOUT_MULTIPLIER = 1000;
 namespace gsocket{
     /* __sw C'tors */
     __sw::__sw(Domain d, Type t, Behaviour b = BLOCK):domain(static_cast<int>(d)), type(b == BLOCK ? static_cast<int>(t) : static_cast<int>(t) | SOCK_NONBLOCK),fd(socket(domain,type,0)){}
-    __sw::__sw(int d, int t, int p):domain(d),type(t),fd(socket(d,t,p)){}
-    __sw::__sw(int fd):fd(fd){}
+    __sw::__sw(uint8_t d, uint8_t t, uint8_t p):domain(d),type(t),fd(socket(d,t,p)){}
+    __sw::__sw(uint8_t fd):fd(fd){}
     /* CLOSE */
     int __sw::close(){
         return ::close(fd);
@@ -19,6 +19,12 @@ namespace gsocket{
             return 1;
         }
         return ::connect(fd, reinterpret_cast<sockaddr*>(&addr), addrlen); 
+    }
+    int __sw::connect(addrinfo *const addr){
+        return ::connect(fd, addr->ai_addr, addr->ai_addrlen);
+    }
+    int __sw::connect(addressInfo *xdd){
+        return 1;
     }
     /* SEND FUNCTIONS */
     int __sw::send(std::string_view d){
@@ -59,7 +65,6 @@ namespace gsocket{
         if(r > 0 && (fdpol.revents & POLLIN)){
             int b;
             ioctl(fd, FIONREAD, &b);
-            std::cout << "available: " << b << "\n";
             if(buff.size() < b){
                 buff.resize(buff.size()+b);
             }
@@ -96,8 +101,8 @@ namespace gsocket{
     /* BIND FUNCTIONS */
     int __sw::bind(std::string_view h, uint16_t p){
         sockaddr_in addr{
-            addr.sin_family = domain,
-            addr.sin_port = htons(p)
+            .sin_family = domain,
+            .sin_port = htons(p)
         };
         if(inet_pton(domain, h.data(), &addr.sin_addr) <= 0){
             return 1;
@@ -109,7 +114,7 @@ namespace gsocket{
     }
     int __sw::bind(uint16_t p){
         sockaddr_in addr{
-            .sin_family = static_cast<unsigned short>(p),
+            .sin_family = domain,
             .sin_port = htons(p),
             .sin_addr = INADDR_ANY
         };

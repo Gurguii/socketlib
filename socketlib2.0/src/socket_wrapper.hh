@@ -23,6 +23,7 @@
 #define __IO_BUFFSIZE 1024
 
 #include "enums.hh"
+#include "utils.hh"
 
 struct msgFrom{
     std::string host;
@@ -38,16 +39,18 @@ struct Address{
 namespace gsocket{
     class __sw{
         private:
-        int domain,type,fd;
+        uint8_t domain,type,fd;
         protected:
         __sw(Domain d, Type t, Behaviour b);
-        __sw(int domain, int type, int protocol);
-        __sw(int fd);
+        __sw(uint8_t domain, uint8_t type, uint8_t protocol);
+        __sw(uint8_t fd);
         public:
         /* CLOSE */
         int close();
         /* CONNECT */
         int connect(std::string_view host, uint16_t port);
+        int connect(addrinfo *const addr);
+        int connect(addressInfo *addr);
         /* SEND DATA */
         int send(std::string_view data);
         int send(std::string_view data, int bytes);
