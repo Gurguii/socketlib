@@ -5,9 +5,8 @@ namespace gsocket{
     class Socket : public __sw{
         public:
         Socket(Domain d, Type t, Behaviour b);
-        Socket(int dom, int typ, int beh);
-        Socket(int fd);
-        Socket acceptConnection();
+        Socket(ui8 dom, ui8 typ, ui8 b);
+        Socket(ui8 fd);
     };
 }
 #endif

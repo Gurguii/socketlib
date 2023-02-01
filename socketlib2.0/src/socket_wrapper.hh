@@ -38,9 +38,6 @@ namespace gsocket{
         __sw(Domain d, Type t, Behaviour b);
         __sw(ui8 domain, ui8 type, ui8 protocol);
         __sw(ui8 fd);
-        ~__sw(){
-            close();
-        }
         public:
         /* GET FILE DESCRIPTOR */
         const int getFD(){

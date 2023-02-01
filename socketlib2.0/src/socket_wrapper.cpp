@@ -69,8 +69,8 @@ namespace gsocket{
         sockaddr_in addr;
         socklen_t addrlen = sizeof(addr);
         int &&n = ::recvfrom(fd,data.msg.data(), data.msg.size(), 0, reinterpret_cast<sockaddr*>(&addr),&addrlen);
-        data.host = inet_ntoa(addr.sin_addr);
-        data.port = htons(addr.sin_port);
+        data.addr.host = inet_ntoa(addr.sin_addr);
+        data.addr.port = htons(addr.sin_port);
         return n;
     }
     /* AWAIT FUNCTIONS */
@@ -107,8 +107,8 @@ namespace gsocket{
                 socklen_t &&addrlen = sizeof(addr);
                 int &&n = ::recvfrom(fd, __data.msg.data(), avBytes, 0, &addr, &addrlen);
                 if(n != -1){
-                    __data.host = inet_ntoa(reinterpret_cast<sockaddr_in*>(&addr)->sin_addr);
-                    __data.port = htons(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
+                    __data.addr.host = inet_ntoa(reinterpret_cast<sockaddr_in*>(&addr)->sin_addr);
+                    __data.addr.port = htons(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
                 }
                 return n;
                 //return ::recv(sock, __sockHostData->msg.data(), avBytes, 0);
@@ -122,13 +122,10 @@ namespace gsocket{
             .sin_family = domain,
             .sin_port = htons(p)
         };
-        if(inet_pton(domain, h.data(), &addr.sin_addr) <= 0){
-            return 1;
-        }
-        if(::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr))){
-            return 1;
-        }
-        return 0;
+        int opt{1};
+        return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
+                | (inet_pton(domain, h.data(), &addr.sin_addr) <= 0)
+                | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
     }
     int __sw::bind(ui16 p){
         sockaddr_in addr{
@@ -136,10 +133,9 @@ namespace gsocket{
             .sin_port = htons(p),
             .sin_addr = INADDR_ANY
         };
-        if(::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr))){
-            return 1;
-        };
-        return 0;
+        int opt{1};
+        return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
+                | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
     }
     /* LISTEN FUNCTIONS */
     int __sw::listen(int __mConns = 3){

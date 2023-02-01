@@ -6,15 +6,16 @@
 #include <ifaddrs.h>
 #include <netdb.h>
 #include "enums.hh"
-struct msgFrom{
-    std::string host;
-    uint16_t port;
-    std::string msg;
-};
+
 
 struct Address{
     std::string host;
     uint16_t port;
+};
+
+struct msgFrom{
+    Address addr;
+    std::string msg;
 };
 
 struct socketPreferences{
