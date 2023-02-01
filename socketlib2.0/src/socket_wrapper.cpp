@@ -2,15 +2,15 @@
 constexpr int __TIMEOUT_MULTIPLIER = 1000;
 namespace gsocket{
     /* __sw C'tors */
-    __sw::__sw(Domain d, Type t, Behaviour b = BLOCK):domain(static_cast<int>(d)), type(b == BLOCK ? static_cast<int>(t) : static_cast<int>(t) | SOCK_NONBLOCK),fd(socket(domain,type,0)){}
-    __sw::__sw(uint8_t d, uint8_t t, uint8_t p):domain(d),type(t),fd(socket(d,t,p)){}
-    __sw::__sw(uint8_t fd):fd(fd){}
+    __sw::__sw(Domain d, Type t, Behaviour b):domain(static_cast<int>(d)), type(b == BLOCK ? static_cast<int>(t) : static_cast<int>(t) | SOCK_NONBLOCK),fd(socket(domain,type,0)){}
+    __sw::__sw(ui8 d, ui8 t, ui8 p):domain(d),type(t),fd(socket(d,t,p)){}
+    __sw::__sw(ui8 fd):fd(fd){}
     /* CLOSE */
     int __sw::close(){
         return ::close(fd);
     }
     /* CONNECT FUNCTIONS */
-    int __sw::connect(std::string_view h, uint16_t p){
+    int __sw::connect(str_view h, ui16 p){
         sockaddr_in addr;
         socklen_t addrlen = sizeof(addr);
         addr.sin_family = domain;
@@ -27,13 +27,13 @@ namespace gsocket{
         return ::connect(fd, addr->get()->ai_addr, addr->get()->ai_addrlen);
     }
     /* SEND FUNCTIONS */
-    int __sw::send(std::string_view d){
+    int __sw::send(str_view d){
         return ::send(fd, d.data(), d.size(), 0);
     }
-    int __sw::send(std::string_view d, int b){
+    int __sw::send(str_view d, int b){
         return ::send(fd, d.data(), b, 0);
     };
-    int __sw::sendto(std::string_view host, uint16_t port, std::string_view msg){
+    int __sw::sendto(str_view host, ui16 port, str_view msg){
         sockaddr_in addr{
             .sin_family = domain,
             .sin_port = htons(port),
@@ -117,7 +117,7 @@ namespace gsocket{
             return -2;
     }
     /* BIND FUNCTIONS */
-    int __sw::bind(std::string_view h, uint16_t p){
+    int __sw::bind(str_view h, ui16 p){
         sockaddr_in addr{
             .sin_family = domain,
             .sin_port = htons(p)
@@ -130,7 +130,7 @@ namespace gsocket{
         }
         return 0;
     }
-    int __sw::bind(uint16_t p){
+    int __sw::bind(ui16 p){
         sockaddr_in addr{
             .sin_family = domain,
             .sin_port = htons(p),
@@ -154,7 +154,7 @@ namespace gsocket{
     int __sw::accept(Address& a){
         sockaddr_in addr;
         socklen_t addrlen = sizeof(addr);
-        uint8_t n = ::accept(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
+        ui8 n = ::accept(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
         a.host = inet_ntoa(addr.sin_addr);
         a.port = htons(addr.sin_port);
         return n;

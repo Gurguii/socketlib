@@ -67,6 +67,10 @@
         "condition_variable": "cpp",
         "mutex": "cpp",
         "optional": "cpp",
-        "span": "cpp"
-    }
+        "span": "cpp",
+        "list": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

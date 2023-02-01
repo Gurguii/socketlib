@@ -8,7 +8,7 @@
 #include "enums.hh"
 struct msgFrom{
     std::string host;
-    int port;
+    uint16_t port;
     std::string msg;
 };
 

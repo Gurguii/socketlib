@@ -2,10 +2,10 @@
 
 namespace gsocket::utils
 { 
-    std::string getIpByIface(std::string_view ifa, Domain &&t = inet){
+    str getIpByIface(str_view ifa, Domain &&t = inet){
         ifaddrs *addrs = nullptr;
         getifaddrs(&addrs);
-        std::string iface((t == inet ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN), '\x00');
+        str iface((t == inet ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN), '\x00');
         for(auto a = addrs ; a!=nullptr; a = a->ifa_next)
         {
             if(a->ifa_addr->sa_family == static_cast<int>(t))
@@ -24,7 +24,7 @@ namespace gsocket::utils
         freeifaddrs(addrs);
         return iface;
     }
-    addressInfo getaddrinfo(std::string_view domain, std::string_view service, socketPreferences &hints){
+    addressInfo getaddrinfo(str_view domain, str_view service, socketPreferences &hints){
         addrinfo *addrs = nullptr;
         addrinfo h{
             hints.flags,
@@ -41,9 +41,9 @@ namespace gsocket::utils
         };
         return addressInfo(addrs);
     }
-    std::pair<std::string,std::string> getnameinfo(addressInfo &addr){
-        std::string _host(46,'\x00');
-        std::string _serv(46,'\x00');
+    std::pair<str,str> getnameinfo(addressInfo &addr){
+        str _host(46,'\x00');
+        str _serv(46,'\x00');
         if(!::getnameinfo(addr.get()->ai_addr, addr.get()->ai_addrlen, &_host[0], 46, &_serv[0], 46, 0))
         {
             return {};
