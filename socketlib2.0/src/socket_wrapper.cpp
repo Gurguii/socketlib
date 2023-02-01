@@ -23,8 +23,8 @@ namespace gsocket{
     int __sw::connect(addrinfo *const addr){
         return ::connect(fd, addr->ai_addr, addr->ai_addrlen);
     }
-    int __sw::connect(addressInfo *xdd){
-        return 1;
+    int __sw::connect(addressInfo *addr){
+        return ::connect(fd, addr->get()->ai_addr, addr->get()->ai_addrlen);
     }
     /* SEND FUNCTIONS */
     int __sw::send(std::string_view d){
@@ -33,6 +33,16 @@ namespace gsocket{
     int __sw::send(std::string_view d, int b){
         return ::send(fd, d.data(), b, 0);
     };
+    int __sw::sendto(std::string_view host, uint16_t port, std::string_view msg){
+        sockaddr_in addr{
+            .sin_family = domain,
+            .sin_port = htons(port),
+        };
+        if(inet_pton(domain, msg.data(), &addr.sin_addr)){
+            return -2;
+        }
+        return ::sendto(fd, msg.data(), msg.size(), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+    }
     /* RECV FUNCTIONS */
     std::optional<std::string> __sw::recv(){
         std::string buffer(__IO_BUFFSIZE,'\x00');
@@ -54,6 +64,14 @@ namespace gsocket{
             return {};
         };
         return buffer;
+    }
+    int __sw::recvfrom(msgFrom &data){
+        sockaddr_in addr;
+        socklen_t addrlen = sizeof(addr);
+        int &&n = ::recvfrom(fd,data.msg.data(), data.msg.size(), 0, reinterpret_cast<sockaddr*>(&addr),&addrlen);
+        data.host = inet_ntoa(addr.sin_addr);
+        data.port = htons(addr.sin_port);
+        return n;
     }
     /* AWAIT FUNCTIONS */
     template <typename T> int __sw::awaitData(T &buff, int tout){

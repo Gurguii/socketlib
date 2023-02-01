@@ -1,6 +1,5 @@
 #include "utils.hh"
 
-
 namespace gsocket::utils
 { 
     std::string getIpByIface(std::string_view ifa, Domain &&t = inet){
@@ -25,7 +24,35 @@ namespace gsocket::utils
         freeifaddrs(addrs);
         return iface;
     }
-    std::string getaddrinfo(std::string_view a, std::string_view b){
-        std::cout << a << " " << b << "\n";
+    addressInfo getaddrinfo(std::string_view domain, std::string_view service, socketPreferences &hints){
+        addrinfo *addrs = nullptr;
+        addrinfo h{
+            hints.flags,
+            static_cast<int>(hints.domain),
+            static_cast<int>(hints.type),
+            hints.protocol,
+            0,
+            nullptr,
+            nullptr,
+            nullptr
+        };
+        if(::getaddrinfo(domain.data(), service.data(), &h, &addrs)){
+            return nullptr;
+        };
+        return addressInfo(addrs);
+    }
+    std::pair<std::string,std::string> getnameinfo(addressInfo &addr){
+        std::string _host(46,'\x00');
+        std::string _serv(46,'\x00');
+        if(!::getnameinfo(addr.get()->ai_addr, addr.get()->ai_addrlen, &_host[0], 46, &_serv[0], 46, 0))
+        {
+            return {};
+        }
+        return std::make_pair(_host,_serv);
+    }
+    template <typename T> std::pair<T,T> getsocketpair(Type t, Behaviour b){
+        std::pair<int,int> fds;
+        ::socketpair(AF_LOCAL,(b == BLOCK ? static_cast<int>(t) : (static_cast<int>(t) | SOCK_NONBLOCK)),0, &fds.first);
+        return fds;
     }
 }

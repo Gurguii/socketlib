@@ -25,18 +25,12 @@
 #include "enums.hh"
 #include "utils.hh"
 
-struct msgFrom{
-    std::string host;
-    int port;
-    std::string msg;
-};
-
-struct Address{
-    std::string host;
-    uint16_t port;
-};
-
 namespace gsocket{
+    /* WHAT TO DO? */
+    //using ui16 = uint16_t;
+    //using ui8 = uint8_t;
+    //using str = std::string;
+    //using str_view = std::string;
     class __sw{
         private:
         uint8_t domain,type,fd;
@@ -44,7 +38,14 @@ namespace gsocket{
         __sw(Domain d, Type t, Behaviour b);
         __sw(uint8_t domain, uint8_t type, uint8_t protocol);
         __sw(uint8_t fd);
+        ~__sw(){
+            close();
+        }
         public:
+        /* GET FILE DESCRIPTOR */
+        const int getFD(){
+            return fd;
+        }
         /* CLOSE */
         int close();
         /* CONNECT */
@@ -54,9 +55,11 @@ namespace gsocket{
         /* SEND DATA */
         int send(std::string_view data);
         int send(std::string_view data, int bytes);
+        int sendto(std::string_view host, uint16_t port, std::string_view msg);
         /* RECV DATA */
         std::optional<std::string> recv();
         std::optional<std::string> recv(int bytes);
+        int recvfrom(msgFrom &data);
         /* AWAIT DATA */
         template <typename T> int awaitData(T &buffer, int timeout);
         int awaitDataFrom(msgFrom &__sockHostData, int timeout);
