@@ -1,3 +1,5 @@
+#ifndef SOCKET_WRAPPER_CPP
+#define SOCKET_WRAPPER_CPP
 #include "socket_wrapper.hh"
 constexpr int __TIMEOUT_MULTIPLIER = 1000;
 namespace gsocket{
@@ -169,3 +171,4 @@ namespace gsocket{
         return {inet_ntoa(addr.sin_addr), htons(addr.sin_port)};
     }
 }
+#endif

@@ -1,0 +1,14 @@
+#include "udpClient.hh"
+
+udpClient::udpClient(std::string_view a, uint16_t p, Behaviour b)
+:__sw(AF_INET, (b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0)
+{
+    connect(a,p);
+    ++total;
+}
+udpClient::udpClient(Address &addr, Behaviour b)
+:__sw(AF_INET, (b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0)
+{
+    connect(addr.host,addr.port);
+    ++total;
+}

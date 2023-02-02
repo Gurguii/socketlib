@@ -1,5 +1,5 @@
-#ifndef SOCKET_WRAPPER
-#define SOCKET_WRAPPER
+#ifndef SOCKET_WRAPPER_HH
+#define SOCKET_WRAPPER_HH
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
@@ -33,12 +33,13 @@ namespace gsocket{
     using str_view = std::string_view;
     class __sw{
         private:
-        ui8 domain,type,fd;
+        
         protected:
         __sw(Domain d, Type t, Behaviour b);
         __sw(ui8 domain, ui8 type, ui8 protocol);
         __sw(ui8 fd);
         public:
+        ui8 domain,type,fd;
         /* GET FILE DESCRIPTOR */
         const int getFD(){
             return fd;
