@@ -4,7 +4,7 @@
 #include "../udp_classes/udpClient.cpp"
 #include "../udp_classes/udpServer.cpp"
 int main(){
-    udpClient ucl("127.0.0.1", 8080);
+    udpClient ucl("127.0.0.1", 8080); // CHANGE
     std::string msg(1024,'\x00');
     for(;;){
         printf("msg: ");

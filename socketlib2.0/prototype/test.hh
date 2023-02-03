@@ -19,7 +19,7 @@ namespace proto
     template <class gsocketClass, class A> int recv(gsocketClass *ptr, A *buff){
         return ::recv(ptr->getFD(), buff->data(), buff->size(), 0);
     }
-    /* Note: this template function does not empty the buffer, what means weird old data might
+    /* Note: this template function does not empty the buffer, what means weird previous data might
         be displayed if you don't empty it somehow e.g clear() assign("")
         Example: first read -> "gurgui" || second read -> "aaa"  || buff -> aaagui */
     template <class gsocketClass, class A> int awaitData(gsocketClass *ptr, A *buff, int timeout = -1){
