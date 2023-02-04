@@ -25,12 +25,11 @@ namespace gsocket{
     using str = std::string;
     using str_view = std::string_view;
     class __sw{
-        private:
-        
         protected:
         __sw(Domain d, Type t, Behaviour b);
         __sw(ui8 domain, ui8 type, ui8 protocol);
         __sw(ui8 fd);
+        ~__sw();
         public:
         ui8 domain,type,fd;
         /* GET FILE DESCRIPTOR */

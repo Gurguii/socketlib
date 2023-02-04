@@ -2,7 +2,7 @@
 #define __GSOCKET_TEMPLATE
 #include <string_view>
 #include <gsocket/socket_wrapper>
-#include <gsocket/socket>
+#include <gsocket/gsocket>
 namespace proto
 {
     template <class gsocketClass> int connect(gsocketClass *ptr, std::string_view addr,uint16_t port){
@@ -19,7 +19,7 @@ namespace proto
     template <class gsocketClass, class A> int recv(gsocketClass *ptr, A *buff){
         return ::recv(ptr->getFD(), buff->data(), buff->size(), 0);
     }
-    /* Note: this template function does not empty the buffer, what means weird previous data might
+    /* Note: this template function does not empty the buffer, what means previous data might
         be displayed if you don't empty it somehow e.g clear() assign("")
         Example: first read -> "gurgui" || second read -> "aaa"  || buff -> aaagui */
     template <class gsocketClass, class A> int awaitData(gsocketClass *ptr, A *buff, int timeout = -1){

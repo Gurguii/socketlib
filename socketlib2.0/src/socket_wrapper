@@ -2,11 +2,13 @@
 #define SOCKET_WRAPPER_CPP
 #include <gsocket/socket_wrapper.hh>
 constexpr int __TIMEOUT_MULTIPLIER = 1000;
+constexpr int opt = 1;
 namespace gsocket{
     /* __sw C'tors */
     __sw::__sw(Domain d, Type t, Behaviour b):domain(static_cast<int>(d)), type(b == BLOCK ? static_cast<int>(t) : static_cast<int>(t) | SOCK_NONBLOCK),fd(socket(domain,type,0)){}
     __sw::__sw(ui8 d, ui8 t, ui8 p):domain(d),type(t),fd(socket(d,t,p)){}
     __sw::__sw(ui8 fd):fd(fd){}
+    __sw::~__sw(){::close(fd);}
     /* CLOSE */
     int __sw::close(){
         return ::close(fd);
@@ -113,9 +115,7 @@ namespace gsocket{
                     __data.addr.port = htons(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
                 }
                 return n;
-                //return ::recv(sock, __sockHostData->msg.data(), avBytes, 0);
             }
-            // timeout
             return -2;
     }
     /* BIND FUNCTIONS */
@@ -124,7 +124,7 @@ namespace gsocket{
             .sin_family = domain,
             .sin_port = htons(p)
         };
-        int opt{1};
+        //int opt{1};
         return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
                 | (inet_pton(domain, h.data(), &addr.sin_addr) <= 0)
                 | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
@@ -135,7 +135,7 @@ namespace gsocket{
             .sin_port = htons(p),
             .sin_addr = INADDR_ANY
         };
-        int opt{1};
+        //int opt{1};
         return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
                 | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
     }
