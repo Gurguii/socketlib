@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <netdb.h>
+#include <sys/ioctl.h>
 #include "enums.hh"
 
 
@@ -45,9 +46,11 @@ struct addressInfo{
 };
 
 namespace gsocket::utils{
-    std::string getIpByIface(std::string_view ifa, Domain &&t);
-    addressInfo getaddrinfo(std::string_view domain, std::string_view service, socketPreferences &hints);
-    std::pair<std::string,std::string> getnameinfo(addressInfo &addr);
+    using str = std::string;
+    using str_view = std::string_view;
+    str getIpByIface(str_view ifa, Domain &&t);
+    addressInfo getaddrinfo(str_view domain, str_view service, socketPreferences &hints);
+    std::pair<str,str> getnameinfo(addressInfo &addr);
     template <typename T> std::pair<T,T> getsocketpair(Type t, Behaviour b);
     constexpr auto availableBytes = [](int fd){
         int ab;

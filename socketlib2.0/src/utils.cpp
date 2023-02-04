@@ -1,3 +1,5 @@
+#ifndef UTILS_CPP
+#define UTILS_CPP
 #include "utils.hh"
 
 namespace gsocket::utils
@@ -56,3 +58,4 @@ namespace gsocket::utils
         return fds;
     }
 }
+#endif

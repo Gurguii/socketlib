@@ -9,14 +9,8 @@
 #include <ifaddrs.h>
 #include <netdb.h>
 #include <net/if.h>
-//#include <errno.h>
-//#include <memory>
-//#include <thread>
 #include <sys/ioctl.h>
 #include <sys/poll.h>
-//#include <vector>
-//#include <variant>
-//#include <mutex>
 #include <optional>
 
 #define sockError strerror(errno)
@@ -26,7 +20,6 @@
 #include "utils.hh"
 
 namespace gsocket{
-    /* WHAT TO DO? */
     using ui16 = uint16_t;
     using ui8 = uint8_t;
     using str = std::string;

@@ -1,0 +1,13 @@
+#ifndef TCP_CLIENT_CPP
+#define TCP_CLIENT_CPP
+#include "tcpClient.hh"
+
+tcpClient::tcpClient(std::string_view h,uint16_t p,Behaviour b)
+:__sw(AF_INET, (b == BLOCK ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)),0)
+{
+    __status = connect(h,p);
+}
+int tcpClient::fail(){
+    return __status;
+}
+#endif

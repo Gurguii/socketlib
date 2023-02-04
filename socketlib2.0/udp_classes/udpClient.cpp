@@ -1,3 +1,5 @@
+#ifndef UDP_CLIENT_CPP
+#define UDP_CLIENT_CPP
 #include "udpClient.hh"
 
 udpClient::udpClient(std::string_view a, uint16_t p, Behaviour b)
@@ -12,3 +14,4 @@ udpClient::udpClient(Address &addr, Behaviour b)
     connect(addr.host,addr.port);
     ++total;
 }
+#endif

@@ -78,8 +78,8 @@ namespace gsocket{
     /* AWAIT FUNCTIONS */
     template <typename T> int __sw::awaitData(T &buff, int tout){
         auto fdpol = pollfd{
-            .fd = fd,
-            .events = POLLIN
+            .fd{fd},
+            .events{POLLIN}
         };
         int r = poll(&fdpol,1,(tout > 0 ? tout * __TIMEOUT_MULTIPLIER : -1));
         if(r > 0 && (fdpol.revents & POLLIN)){

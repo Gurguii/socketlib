@@ -1,7 +1,8 @@
+#ifndef SOCKET_CPP
+#define SOCKET_CPP
 #include "socket.hh"
-namespace gsocket
-{
-    Socket::Socket(Domain d, Type t, Behaviour b):__sw(d,t,b){};
-    Socket::Socket(ui8 d, ui8 t, ui8 p):__sw(d,t,p){};
-    Socket::Socket(ui8 fd):__sw(fd){};
-}
+#include "enums.hh"
+Socket::Socket(Domain d, Type t, Behaviour b):__sw(d,t,b){};
+Socket::Socket(uint8_t d, uint8_t t, uint8_t p):__sw(d,t,p){};
+Socket::Socket(uint8_t fd):__sw(fd){};
+#endif

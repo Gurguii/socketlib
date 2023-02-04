@@ -1,5 +1,5 @@
-#ifndef UDP_CLIENT
-#define UDP_CLIENT
+#ifndef UDP_CLIENT_HH
+#define UDP_CLIENT_HH
 #include "../src/socket_wrapper.hh"
 
 class udpClient : public gsocket::__sw

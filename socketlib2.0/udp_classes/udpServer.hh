@@ -1,6 +1,6 @@
-#ifndef UDP_SERVER
-#define UDP_SERVER
-#include "../src/socket_wrapper.cpp"
+#ifndef UDP_SERVER__HH
+#define UDP_SERVER__HH
+#include "../src/socket_wrapper.hh"
 
 class udpServer : public gsocket::__sw
 {

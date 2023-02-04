@@ -51,16 +51,16 @@ namespace proto
     template <class gsocketClass> int listen(gsocketClass *ptr, int __maxconns = 3){
         return ::listen(ptr->fd,__maxconns);
     }
-    template <class gsocketClass> gsocket::Socket acceptConnection(gsocketClass *ptr, Address *buff = nullptr){
+    template <class gsocketClass> Socket acceptConnection(gsocketClass *ptr, Address *buff = nullptr){
         sockaddr_in addr;
         socklen_t addrlen = sizeof(addr);
         int fd = ::accept(ptr->fd, reinterpret_cast<sockaddr*>(&addr),&addrlen);
         if(buff == nullptr){
-            return gsocket::Socket(fd);
+            return Socket(fd);
         }
         buff->host = inet_ntoa(addr.sin_addr);
         buff->port = htons(addr.sin_port);
-        return gsocket::Socket(fd);
+        return Socket(fd);
     }
     template <class gsocketClass> std::optional<Address> getsockname(gsocketClass *ptr, Address *buff = nullptr){
         sockaddr_in addr;
