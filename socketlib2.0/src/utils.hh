@@ -6,9 +6,8 @@
 #include <ifaddrs.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
-#include "enums.hh"
 
-
+#include <gsocket/enums.hh>
 struct Address{
     std::string host;
     uint16_t port;

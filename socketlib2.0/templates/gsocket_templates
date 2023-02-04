@@ -1,8 +1,8 @@
-#ifndef __PROTOTYPE
-#define __PROTOTYPE
+#ifndef __GSOCKET_TEMPLATE
+#define __GSOCKET_TEMPLATE
 #include <string_view>
-#include "../src/socket_wrapper.hh"
-#include "../src/socket.hh"
+#include <gsocket/socket_wrapper>
+#include <gsocket/socket>
 namespace proto
 {
     template <class gsocketClass> int connect(gsocketClass *ptr, std::string_view addr,uint16_t port){

@@ -70,7 +70,17 @@
         "span": "cpp",
         "list": "cpp",
         "set": "cpp",
-        "unordered_set": "cpp"
+        "unordered_set": "cpp",
+        "socket_wrapper.hh": "c",
+        "socket": "cpp",
+        "socket_wrapper": "cpp",
+        "utils": "cpp",
+        "forward_list": "cpp",
+        "buffer": "cpp",
+        "executor": "cpp",
+        "io_context": "cpp",
+        "netfwd": "cpp",
+        "future": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

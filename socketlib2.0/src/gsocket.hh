@@ -1,6 +1,6 @@
 #ifndef SOCKET
 #define SOCKET
-#include "socket_wrapper.hh"
+#include <gsocket/socket_wrapper>
 
 class Socket : public gsocket::__sw{
     public:
@@ -8,5 +8,4 @@ class Socket : public gsocket::__sw{
     Socket(uint8_t dom, uint8_t typ, uint8_t b);
     Socket(uint8_t fd);
 };
-
 #endif

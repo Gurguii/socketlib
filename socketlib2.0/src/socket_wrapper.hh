@@ -16,8 +16,8 @@
 #define sockError strerror(errno)
 #define __IO_BUFFSIZE 1024
 
-#include "enums.hh"
-#include "utils.hh"
+#include <gsocket/enums.hh>
+#include <gsocket/utils>
 
 namespace gsocket{
     using ui16 = uint16_t;

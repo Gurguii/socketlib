@@ -1,6 +1,6 @@
 #ifndef TCP_CLIENT
 #define TCP_CLIENT
-#include "../src/socket_wrapper.hh"
+#include <gsocket/socket_wrapper>
 
 class tcpClient : public gsocket::__sw{
     private:

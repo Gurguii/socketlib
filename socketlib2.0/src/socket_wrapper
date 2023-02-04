@@ -1,6 +1,6 @@
 #ifndef SOCKET_WRAPPER_CPP
 #define SOCKET_WRAPPER_CPP
-#include "socket_wrapper.hh"
+#include <gsocket/socket_wrapper.hh>
 constexpr int __TIMEOUT_MULTIPLIER = 1000;
 namespace gsocket{
     /* __sw C'tors */

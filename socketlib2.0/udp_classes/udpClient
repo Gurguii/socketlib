@@ -1,6 +1,6 @@
 #ifndef UDP_CLIENT_CPP
 #define UDP_CLIENT_CPP
-#include "udpClient.hh"
+#include <gsocket/udpClient.hh>
 
 udpClient::udpClient(std::string_view a, uint16_t p, Behaviour b)
 :__sw(AF_INET, (b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0)

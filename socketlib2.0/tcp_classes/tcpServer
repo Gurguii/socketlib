@@ -1,7 +1,7 @@
 #ifndef TCP_SERVER_CPP
 #define TCP_SERVER_CPP
 
-#include "tcpServer.hh"
+#include <gsocket/tcpServer.hh>
 
 tcpServer::tcpServer(std::string_view addr,uint16_t port,Behaviour b,int __maxconns)
 :__sw(AF_INET, (b == BLOCK ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)),0)
