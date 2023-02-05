@@ -42,6 +42,7 @@ namespace gsocket{
         int connect(str_view host, uint16_t port);
         int connect(addrinfo *const addr);
         int connect(addressInfo *addr);
+        int connect(sockaddr *addr,socklen_t &addrlen);
         /* SEND DATA */
         int send(str_view data);
         int send(str_view data, int bytes);

@@ -9,7 +9,7 @@
 
 #include <gsocket/enums.hh>
 struct Address{
-    std::string host;
+    std::string_view host;
     uint16_t port;
 };
 
@@ -34,9 +34,9 @@ struct addressInfo{
     const addrinfo* get(){
         return head;
     };
-    std::pair<std::string,int> retrieve(){
+    std::pair<std::string_view,int> retrieve(){
         auto addr = reinterpret_cast<sockaddr_in*>(&head->ai_addr);
-        return std::make_pair<std::string,int>(inet_ntoa(addr->sin_addr),htons(addr->sin_port));
+        return std::make_pair<std::string_view,int>(inet_ntoa(addr->sin_addr),htons(addr->sin_port));
     }
     ~addressInfo(){
         /* free addrinfo memory when object goes out of scope */
@@ -49,7 +49,7 @@ namespace gsocket::utils{
     using str_view = std::string_view;
     str getIpByIface(str_view ifa, Domain &&t);
     addressInfo getaddrinfo(str_view domain, str_view service, socketPreferences &hints);
-    std::pair<str,str> getnameinfo(addressInfo &addr);
+    std::pair<str_view,str_view> getnameinfo(addressInfo &addr);
     template <typename T> std::pair<T,T> getsocketpair(Type t, Behaviour b);
     constexpr auto availableBytes = [](int fd){
         int ab;

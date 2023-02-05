@@ -81,7 +81,9 @@
         "io_context": "cpp",
         "netfwd": "cpp",
         "future": "cpp",
-        "tcpclient": "cpp"
+        "tcpclient": "cpp",
+        "templates": "cpp",
+        "gsocket": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

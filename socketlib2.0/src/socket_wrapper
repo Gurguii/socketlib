@@ -15,20 +15,33 @@ namespace gsocket{
     }
     /* CONNECT FUNCTIONS */
     int __sw::connect(str_view h, ui16 p){
-        sockaddr_in addr;
-        socklen_t addrlen = sizeof(addr);
-        addr.sin_family = domain;
-        addr.sin_port = htons(p);
-        if(inet_pton(domain, h.data(), &addr.sin_addr) <= 0){
-            return 1;
+        if(domain == AF_INET){
+            // IPv4
+            sockaddr_in addr{
+                .sin_family{AF_INET},
+                .sin_port{htons(p)}
+            };
+            //socklen_t addrlen = sizeof(addr);
+            return (!inet_pton(domain, h.data(), &addr.sin_addr)
+                    |::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
+        }else if(domain == AF_INET6){
+            // IPv6
+            sockaddr_in6 addr{
+                .sin6_family{AF_INET6},
+                .sin6_port{htons(p)}
+            };
+            return (!inet_pton(domain, h.data(), &addr.sin6_addr)
+                    |::connect(fd, reinterpret_cast<sockaddr*>(&addr),sizeof(addr)));
         }
-        return ::connect(fd, reinterpret_cast<sockaddr*>(&addr), addrlen); 
     }
     int __sw::connect(addrinfo *const addr){
         return ::connect(fd, addr->ai_addr, addr->ai_addrlen);
     }
     int __sw::connect(addressInfo *addr){
         return ::connect(fd, addr->get()->ai_addr, addr->get()->ai_addrlen);
+    }
+    int __sw::connect(sockaddr *addr,socklen_t &addrlen){
+        return ::connect(fd, addr, addrlen);
     }
     /* SEND FUNCTIONS */
     int __sw::send(str_view d){
@@ -38,14 +51,25 @@ namespace gsocket{
         return ::send(fd, d.data(), b, 0);
     };
     int __sw::sendto(str_view host, ui16 port, str_view msg){
-        sockaddr_in addr{
-            .sin_family = domain,
-            .sin_port = htons(port),
-        };
-        if(inet_pton(domain, msg.data(), &addr.sin_addr)){
-            return -2;
+        if(domain == AF_INET){
+            sockaddr_in addr{
+                .sin_family = domain,
+                .sin_port = htons(port),
+            };
+            if(inet_pton(domain, msg.data(), &addr.sin_addr)){
+                return -2;
+            }
+            return ::sendto(fd, msg.data(), msg.size(), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+        }else if(domain == AF_INET6){
+            sockaddr_in6 addr{
+                .sin6_family{AF_INET6},
+                .sin6_port{htons(port)}
+            };
+            if(inet_pton(domain, msg.data(), &addr.sin6_addr)){
+                return -2;
+            }
+            return ::sendto(fd,msg.data(),msg.size(), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
         }
-        return ::sendto(fd, msg.data(), msg.size(), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
     }
     /* RECV FUNCTIONS */
     std::optional<std::string> __sw::recv(){
@@ -70,12 +94,21 @@ namespace gsocket{
         return buffer;
     }
     int __sw::recvfrom(msgFrom &data){
-        sockaddr_in addr;
-        socklen_t addrlen = sizeof(addr);
-        int &&n = ::recvfrom(fd,data.msg.data(), data.msg.size(), 0, reinterpret_cast<sockaddr*>(&addr),&addrlen);
-        data.addr.host = inet_ntoa(addr.sin_addr);
-        data.addr.port = htons(addr.sin_port);
-        return n;
+        if(domain == AF_INET){
+            sockaddr_in addr;
+            socklen_t addrlen = sizeof(addr);
+            int &&n = ::recvfrom(fd,reinterpret_cast<std::string*>(&data.msg)->data(), reinterpret_cast<std::string*>(&data.msg)->size(), 0, reinterpret_cast<sockaddr*>(&addr),&addrlen);
+            data.addr = {inet_ntoa(addr.sin_addr),htons(addr.sin_port)};
+            return n;
+        }else if(domain == AF_INET6){
+            sockaddr_in6 addr;
+            socklen_t addrlen = sizeof(addr);
+            int &&n = ::recvfrom(fd, reinterpret_cast<std::string*>(&data.msg), reinterpret_cast<std::string*>(&data.msg)->size(), 0, reinterpret_cast<sockaddr*>(&addr), &addrlen);
+            std::string ad(46,'\x00');
+            inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
+            data.addr.host = ad.data();
+            return n;
+        }
     }
     /* AWAIT FUNCTIONS */
     template <typename T> int __sw::awaitData(T &buff, int tout){
@@ -120,14 +153,23 @@ namespace gsocket{
     }
     /* BIND FUNCTIONS */
     int __sw::bind(str_view h, ui16 p){
-        sockaddr_in addr{
-            .sin_family = domain,
-            .sin_port = htons(p)
-        };
-        //int opt{1};
-        return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
-                | (inet_pton(domain, h.data(), &addr.sin_addr) <= 0)
-                | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
+        if(domain == AF_INET){
+            sockaddr_in addr{
+                .sin_family = domain,
+                .sin_port = htons(p)
+            };
+            return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
+                    | !inet_pton(domain, h.data(), &addr.sin_addr))
+                    | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+        }else if(domain == AF_INET6){
+            sockaddr_in6 addr{
+                .sin6_family{AF_INET6},
+                .sin6_port{htons(p)}
+            };
+            return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
+                    | !inet_pton(domain, h.data(), &addr.sin6_addr))
+                    | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+        }
     }
     int __sw::bind(ui16 p){
         sockaddr_in addr{

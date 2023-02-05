@@ -43,7 +43,7 @@ namespace gsocket::utils
         };
         return addressInfo(addrs);
     }
-    std::pair<str,str> getnameinfo(addressInfo &addr){
+    std::pair<str_view,str_view> getnameinfo(addressInfo &addr){
         str _host(46,'\x00');
         str _serv(46,'\x00');
         if(!::getnameinfo(addr.get()->ai_addr, addr.get()->ai_addrlen, &_host[0], 46, &_serv[0], 46, 0))
