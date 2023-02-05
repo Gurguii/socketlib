@@ -80,7 +80,8 @@
         "executor": "cpp",
         "io_context": "cpp",
         "netfwd": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "tcpclient": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

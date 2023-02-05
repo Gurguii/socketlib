@@ -1,11 +1,12 @@
 # Minimum version
 cmake_minimum_required (VERSION 3.9)
+
 # Project info
 project (gsocket VERSION 1.0.0 DESCRIPTION "POSIX socket wrapper")
-#set(ENV {testingvariable} "gurguitotesting")
-#execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/setup.sh")
-set(ENV{gurguitesting} "testing environment variable")
-execute_process(COMMAND "./setup.sh")
+
+# Grant access to standard variables related with installation directories (CMAKE_ISNTALL_xDIR)
+include(GNUInstallDirs)
+
 # Set of headers to install
 set(GSOCKET_PUBLIC_HEADERS
 	"src/enums.hh"
@@ -27,6 +28,7 @@ set(GSOCKET_PUBLIC_HEADERS
 
 	"templates/templates"
 )
+
 # Declare the library target
 add_library(${PROJECT_NAME} SHARED
 	"${GSOCKET_PUBLIC_HEADERS}"
@@ -42,9 +44,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 	LINKER_LANGUAGE CXX
 	PUBLIC_HEADER "${GSOCKET_PUBLIC_HEADERS}"
 )
-
-# Grant access to standard variables related with installation directories (CMAKE_ISNTALL_xDIR)
-include(GNUInstallDirs)
 
 # Set install destinations
 install(TARGETS ${PROJECT_NAME}
