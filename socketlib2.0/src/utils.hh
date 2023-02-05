@@ -9,7 +9,7 @@
 
 #include <gsocket/enums.hh>
 struct Address{
-    std::string_view host;
+    std::string host;
     uint16_t port;
 };
 
