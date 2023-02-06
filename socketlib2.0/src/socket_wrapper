@@ -106,7 +106,7 @@ namespace gsocket{
             int &&n = ::recvfrom(fd, data.msg.data(), data.msg.size(), 0, reinterpret_cast<sockaddr*>(&addr), &addrlen);
             std::string ad(46,'\x00');
             inet_ntop(AF_INET6, &addr.sin6_addr, &ad[0], INET6_ADDRSTRLEN);
-            ad.swap(data.addr.host);
+            data.addr.host = ad;
             data.addr.port = htons(addr.sin6_port);
             return n;
         }
@@ -153,31 +153,32 @@ namespace gsocket{
             return -2;
     }
     /* BIND FUNCTIONS */
-    int __sw::bind(str_view h, ui16 p){
+    int __sw::bind(str_view addr, ui16 p){
         if(domain == AF_INET){
-            sockaddr_in addr{
+            sockaddr_in ad{
                 .sin_family = domain,
                 .sin_port = htons(p)
             };
             return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
-                    | !inet_pton(domain, h.data(), &addr.sin_addr))
-                    | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+                    | !inet_pton(domain, addr.data(), &ad.sin_addr))
+                    | ::bind(fd, reinterpret_cast<sockaddr*>(&ad), sizeof(ad));
         }else if(domain == AF_INET6){
-            sockaddr_in6 addr{
+            sockaddr_in6 ad{
                 .sin6_family{AF_INET6},
-                .sin6_port{htons(p)}
+                .sin6_port{htons(p)},
+                .sin6_scope_id{gsocket::utils::getIdByIp(addr)}
             };
             return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
-                    | !inet_pton(domain, h.data(), &addr.sin6_addr))
-                    | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+                    | !inet_pton(domain, addr.data(), &ad.sin6_addr))
+                    | ::bind(fd, reinterpret_cast<sockaddr*>(&ad), sizeof(ad));
         }
     }
     int __sw::bind(ui16 p){
         if(domain == AF_INET){
             sockaddr_in addr{
-                .sin_family = domain,
-                .sin_port = htons(p),
-                .sin_addr = INADDR_ANY
+                .sin_family{AF_INET},
+                .sin_port{htons(p)},
+                .sin_addr{INADDR_ANY}
             };
             return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
                     | ::bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
@@ -201,38 +202,50 @@ namespace gsocket{
         socklen_t addrlen = sizeof(addr);
         return ::accept(fd, &addr, &addrlen);
     }
-    int __sw::accept(Address& a){
+    template <typename AddrStruct> int __sw::accept(AddrStruct& a){
         sockaddr addr;
         socklen_t addrlen = sizeof(addr);
         ui8 n = ::accept(fd, &addr, &addrlen);
-        switch(addr.sa_family){
-            case AF_INET:
-            a.host.resize(INET_ADDRSTRLEN);
+        if (addr.sa_family == AF_INET){
             a.host = inet_ntoa(reinterpret_cast<sockaddr_in*>(&addr)->sin_addr);
             a.port = htons(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
-            break;
-            case AF_INET6:
-            a.host.resize(INET6_ADDRSTRLEN);
-            inet_ntop(fd,&reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr,a.host.data(),INET6_ADDRSTRLEN);
+        }
+        else if(addr.sa_family == AF_INET6){
+            inet_ntop(AF_INET6,&reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr,a.host.data(),INET6_ADDRSTRLEN);
             a.port = htons(reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port);
-            break;
-            default:
-            ;
         }
         return n;
     }
     /* RETRIEVE SOCKET DATA */
     Address __sw::getpeername(){
-        sockaddr_in addr;
-        socklen_t addrlen = sizeof(addr);
-        ::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
-        return {inet_ntoa(addr.sin_addr), htons(addr.sin_port)};
+        if(domain == AF_INET){
+            sockaddr_in addr;
+            socklen_t addrlen = sizeof(addr);
+            ::getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
+            return {inet_ntoa(addr.sin_addr), htons(addr.sin_port)};
+        }else if(domain == AF_INET6){
+            std::string ip(INET6_ADDRSTRLEN,'\x00');
+            sockaddr_in6 addr;
+            socklen_t addrlen = sizeof(addr);
+            ::getpeername(fd,reinterpret_cast<sockaddr*>(&addr),&addrlen);
+            inet_ntop(AF_INET6,&addr.sin6_addr,ip.data(),INET6_ADDRSTRLEN);
+            return {ip,htons(addr.sin6_port)};
+        }
     }
     Address __sw::getsockname(){
-        sockaddr_in addr;
-        socklen_t addrlen = sizeof(addr);
-        ::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
-        return {inet_ntoa(addr.sin_addr), htons(addr.sin_port)};
+        if(domain == AF_INET){
+            sockaddr_in addr;
+            socklen_t addrlen = sizeof(addr);
+            ::getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
+            return {inet_ntoa(addr.sin_addr), htons(addr.sin_port)};
+        }else if(domain == AF_INET6){
+            std::string ip(INET6_ADDRSTRLEN,'\x00');
+            sockaddr_in6 addr;
+            socklen_t adlen = sizeof(addr);
+            ::getsockname(fd,reinterpret_cast<sockaddr*>(&addr), &adlen);
+            inet_ntop(AF_INET6,&addr.sin6_addr,ip.data(),INET6_ADDRSTRLEN);
+            return {ip,htons(addr.sin6_port)};
+        }
     }
 }
 #endif

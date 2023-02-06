@@ -1,22 +1,22 @@
-#include "../src/socket_wrapper.cpp"
-#include "../src/socket.cpp"
-#include "../tcp_classes/tcp_server.cpp"
-#include "../tcp_classes/tcp_client.cpp"
+#include <gsocket/tcpServer>
+constexpr int TIMEOUT{4};
 int main(){
-    gsocket::tcpServer sv("127.0.0.1", 8080);
+    tcpServer sv("127.0.0.1", 8080);
     if(sv.fail()){
         std::cerr << "can't connect - " << sockError << "\n";
         return 0;
     }
     const auto [host,port] = sv.getsockname();
-    std::cout << "listening on " << host << " " << port << "\n";
+    std::cout << "[+] listening on " << host << " " << port << "\n";
+    std::cout << "[+] connection timeout: " << TIMEOUT << "s\n";
     msgFrom info;
     int r;
     for(;;){
         auto newClient = sv.acceptConnection();
         std::cout << "CONN FROM " << host << " : " << port << "\n";
         for(;;){
-            r = newClient.awaitData(info.msg,5);
+            info.msg.assign("");
+            r = newClient.awaitData(info.msg,TIMEOUT);
             if(r > 0){
                 std::cout << "received: " << info.msg << "\n";
                 continue;

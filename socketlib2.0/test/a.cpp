@@ -1,17 +1,17 @@
 #include <gsocket/gsocket>
 #include <gsocket/utils>
-#include <gsocket/templates>
+
 int main(){
     Socket s(inet6,tcp,BLOCK);
-    auto address = gsocket::utils::getIpByIface("lo",inet6);
+    auto address = gsocket::utils::getIpByIface("eth0",inet6);
     s.bind(address, 8080);
     s.listen();
 
-    auto [host,port] = gsocket::templates::getsockname(&s).value();
+    auto [host,port] = s.getsockname();
     std::cout << "listening ON " << host << " : " << port << "\n";
     
     std::string buffer(1024,'\x00');
-    Address addr;
+    Addr4 addr;
     for(;;){
         auto client = Socket(s.accept(addr));
         std::cout << "CONN FROM " << addr.host << " : " << addr.port << "\n";

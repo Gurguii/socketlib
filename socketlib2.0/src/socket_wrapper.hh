@@ -61,7 +61,8 @@ namespace gsocket{
         int listen(int maxConns);
         /* ACCEPT */
         int accept();
-        int accept(Address& addr);
+        template <typename AddrStruct> int accept(AddrStruct& a);
+        template <typename T> int acceptWhiteList(T args);
         /* RETRIEVE SOCKET DATA */
         Address getsockname();
         Address getpeername();
