@@ -112,12 +112,12 @@ namespace gsocket{
         }
     }
     /* AWAIT FUNCTIONS */
-    template <typename T> int __sw::awaitData(T &buff, int tout){
+    template <typename T> int __sw::awaitData(T &buff, int timeout){
         auto fdpol = pollfd{
             .fd{fd},
             .events{POLLIN}
         };
-        int r = poll(&fdpol,1,(tout > 0 ? tout * __TIMEOUT_MULTIPLIER : -1));
+        int r = poll(&fdpol,1,(timeout > 0 ? timeout * __TIMEOUT_MULTIPLIER : -1));
         if(r > 0 && (fdpol.revents & POLLIN)){
             int b;
             ioctl(fd, FIONREAD, &b);

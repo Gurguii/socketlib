@@ -52,7 +52,7 @@ namespace gsocket{
         std::optional<str> recv(int bytes);
         int recvfrom(msgFrom &data);
         /* AWAIT DATA */
-        template <typename T> int awaitData(T &buffer, int timeout);
+        template <typename T> int awaitData(T &buffer, int timeout = -1);
         int awaitDataFrom(msgFrom &__sockHostData, int timeout);
         /* BIND */
         int bind(str_view addr, uint16_t port);
