@@ -21,9 +21,6 @@ Note that you can also manually install it, there is nothing special happening i
 ## Using the library
 Once installed, we can access any file of the library by doing  
 **#include <gsocket/[file_name]>**  
-```bash
-./base <file|string>
-``` 
 ## Simple tcp(Ipv4) client server example
 ```bash
 //server.cpp
