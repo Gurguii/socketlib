@@ -3,13 +3,13 @@
 
 #include <gsocket/tcpServer.hh>
 
-tcpServer::tcpServer(std::string_view addr,uint16_t port,Behaviour b,int __maxconns)
-:__sw(AF_INET, (b == BLOCK ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)),0)
+tcpServer::tcpServer(std::string_view addr,uint16_t port,Domain d,Behaviour b,int __maxconns)
+:__sw(static_cast<int>(d), (b == BLOCK ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)),0)
 {
     __status = (bind(addr,port) | listen(__maxconns));
 }
-tcpServer::tcpServer(uint16_t port,Behaviour b,int __maxconns)
-:__sw(AF_INET, (b == BLOCK ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)),0)
+tcpServer::tcpServer(uint16_t port,Domain d,Behaviour b,int __maxconns)
+:__sw(static_cast<int>(d), (b == BLOCK ? SOCK_STREAM : (SOCK_STREAM | SOCK_NONBLOCK)),0)
 {
     __status = (bind(port) | listen(__maxconns));
 }

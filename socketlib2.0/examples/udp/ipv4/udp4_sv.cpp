@@ -1,11 +1,7 @@
-#include "../src/socket_wrapper.cpp"
-#include "../src/socket.cpp"
-#include "../prototype/test.hh"
-#include "../udp_classes/udpClient.cpp"
-#include "../udp_classes/udpServer.cpp"
+#include <gsocket/udpServer>
 int main(){
     udpServer sv("127.0.0.1",8080); // CHANGE
-    auto [host,port] = proto::getsockname(&sv).value();
+    auto [host,port] = sv.getsockname();
     std::cout << "Listening on " << host << " : " << port << "\n";
     msgFrom info;
     int n;

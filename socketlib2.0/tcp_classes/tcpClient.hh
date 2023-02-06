@@ -7,7 +7,7 @@ class tcpClient : public gsocket::__sw{
     inline static int total{0};
     int __status = 0;
     public:
-    tcpClient(std::string_view host, uint16_t port, Behaviour b = BLOCK);
+    tcpClient(std::string_view host, uint16_t port,Domain domain = inet, Behaviour b = BLOCK);
     int fail();
 };
 

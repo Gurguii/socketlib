@@ -6,8 +6,8 @@ class udpServer : public gsocket::__sw
 {
     private:
     public:
-    udpServer(std::string_view addr, uint16_t port, Behaviour b = BLOCK);
-    udpServer(uint16_t port, Behaviour b = BLOCK);
+    udpServer(std::string_view addr, uint16_t port,Domain domain = inet, Behaviour b = BLOCK);
+    udpServer(uint16_t port,Domain domain = inet, Behaviour b = BLOCK);
 };
 
 #endif

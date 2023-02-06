@@ -11,7 +11,7 @@ include(GNUInstallDirs)
 set(GSOCKET_PUBLIC_HEADERS
 	"src/enums.hh"
 	"src/socket_wrapper.hh"
-	"src/gsocket.hh"
+	"src/socket.hh"
 	"src/utils.hh"
 	"tcp_classes/tcpClient.hh"
 	"tcp_classes/tcpServer.hh"
@@ -19,7 +19,7 @@ set(GSOCKET_PUBLIC_HEADERS
 	"udp_classes/udpServer.hh"
 	
 	"src/socket_wrapper"
-	"src/gsocket"
+	"src/socket"
 	"src/utils"
 	"tcp_classes/tcpClient"
 	"tcp_classes/tcpServer"

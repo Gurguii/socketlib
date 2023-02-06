@@ -3,7 +3,7 @@ constexpr int TIMEOUT{4};
 int main(){
     tcpServer sv("127.0.0.1", 8080);
     if(sv.fail()){
-        std::cerr << "can't connect - " << sockError << "\n";
+        std::cerr << "can't bind - " << sockError << "\n";
         return 0;
     }
     const auto [host,port] = sv.getsockname();

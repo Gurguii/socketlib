@@ -2,7 +2,7 @@
 #define __GSOCKET_TEMPLATE
 #include <string_view>
 #include <gsocket/socket_wrapper>
-#include <gsocket/gsocket>
+#include <gsocket/socket>
 namespace gsocket::templates
 {
     template <class gsocketClass> constexpr int connect(gsocketClass *ptr, std::string_view addr,uint16_t port){

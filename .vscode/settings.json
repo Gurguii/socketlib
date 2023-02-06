@@ -84,7 +84,9 @@
         "tcpclient": "cpp",
         "templates": "cpp",
         "gsocket": "cpp",
-        "tcpserver": "cpp"
+        "tcpserver": "cpp",
+        "udpclient": "cpp",
+        "udpserver": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

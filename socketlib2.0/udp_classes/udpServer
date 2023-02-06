@@ -2,13 +2,13 @@
 #define UDP_SERVER_CPP
 #include <gsocket/udpServer.hh>
 
-udpServer::udpServer(std::string_view addr, uint16_t port, Behaviour b)
-:__sw(AF_INET,(b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0){
+udpServer::udpServer(std::string_view addr, uint16_t port,Domain domain,Behaviour b)
+:__sw(static_cast<int>(domain),(b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0){
     bind(addr,port);
 }
 
-udpServer::udpServer(uint16_t port, Behaviour b)
-:__sw(AF_INET,(b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0){
+udpServer::udpServer(uint16_t port,Domain domain,Behaviour b)
+:__sw(static_cast<int>(domain),(b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0){
     bind(port);
 }
 #endif
