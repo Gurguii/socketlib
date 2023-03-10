@@ -1,0 +1,17 @@
+#ifndef UDP_CLIENT_CPP
+#define UDP_CLIENT_CPP
+#include <gsocket/udp_classes/udpClient.hh>
+
+udpClient::udpClient(std::string_view a, uint16_t p,Domain domain, Behaviour b)
+:__sw(static_cast<int>(domain), (b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0)
+{
+    connect(a,p);
+    ++total;
+}
+udpClient::udpClient(Address &addr,Domain domain, Behaviour b)
+:__sw(static_cast<int>(domain), (b == BLOCK ? SOCK_DGRAM : (SOCK_DGRAM | SOCK_NONBLOCK)),0)
+{
+    connect(addr.host,addr.port);
+    ++total;
+}
+#endif

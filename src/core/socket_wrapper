@@ -1,0 +1,27 @@
+#ifndef SOCKET_WRAPPER_CPP
+#define SOCKET_WRAPPER_CPP
+
+#include <gsocket/src/posix_wrapped_functions/connect>
+#include <gsocket/src/posix_wrapped_functions/accept>
+#include <gsocket/src/posix_wrapped_functions/await>
+#include <gsocket/src/posix_wrapped_functions/bind>
+#include <gsocket/src/posix_wrapped_functions/recv>
+#include <gsocket/src/posix_wrapped_functions/recvfrom>
+#include <gsocket/src/posix_wrapped_functions/send>
+#include <gsocket/src/posix_wrapped_functions/sendto>
+#include <gsocket/src/posix_wrapped_functions/listen>
+#include <gsocket/src/posix_wrapped_functions/close>
+#include <gsocket/src/posix_wrapped_functions/getpeername>
+#include <gsocket/src/posix_wrapped_functions/getsockname>
+
+#include <gsocket/src/socket>
+
+namespace gsocket
+{
+    /* __sw C'tors */
+    __sw::__sw(Domain d, Type t, Behaviour b):domain(static_cast<int>(d)), type(b == BLOCK ? static_cast<int>(t) : static_cast<int>(t) | SOCK_NONBLOCK),fd(socket(domain,type,0)){}
+    __sw::__sw(ui8 d, ui8 t, ui8 p):domain(d),type(t),fd(socket(d,t,p)){}
+    __sw::__sw(ui8 fd):fd(fd){}
+    __sw::~__sw(){::close(fd);}
+}
+#endif

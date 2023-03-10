@@ -1,0 +1,7 @@
+/home/gurgui/socketlib/build/CMakeFiles/gsocket.dir
+/home/gurgui/socketlib/build/CMakeFiles/edit_cache.dir
+/home/gurgui/socketlib/build/CMakeFiles/rebuild_cache.dir
+/home/gurgui/socketlib/build/CMakeFiles/list_install_components.dir
+/home/gurgui/socketlib/build/CMakeFiles/install.dir
+/home/gurgui/socketlib/build/CMakeFiles/install/local.dir
+/home/gurgui/socketlib/build/CMakeFiles/install/strip.dir
