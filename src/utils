@@ -1,6 +1,6 @@
 #ifndef UTILS_CPP
 #define UTILS_CPP
-#include <gsocket/src/utils.hh>
+#include <gsocket/misc/utils.hh>
 
 namespace gsocket::utils
 { 

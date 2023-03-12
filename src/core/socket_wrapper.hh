@@ -16,8 +16,8 @@
 #define sockError strerror(errno)
 #define __IO_BUFFSIZE 1024
 
-#include <gsocket/src/enums.hh>
-#include <gsocket/src/utils>
+#include <gsocket/misc/enums.hh>
+#include <gsocket/misc/utils>
 
 namespace gsocket{
     using ui16 = uint16_t;
@@ -52,6 +52,7 @@ namespace gsocket{
         int send(str_view data, int &&bytes);
         int send(const char *&data);
         int send(const char *&& data);
+        int send(std::string &data);
         template <typename ...Args> int send(Args&&... args);
         int sendto(str_view host, uint16_t port, str_view msg);
         template <typename ...Args> int sendto(Args&&... args);

@@ -1,7 +1,7 @@
 #ifndef TCP_SERVER
 #define TCP_SERVER
 #include <gsocket/src/core/socket_wrapper>
-#include <gsocket/src/socket>
+#include <gsocket/socket>
 
 class tcpServer : public gsocket::__sw{
     private:

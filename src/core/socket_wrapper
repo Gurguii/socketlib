@@ -14,7 +14,7 @@
 #include <gsocket/src/posix_wrapped_functions/getpeername>
 #include <gsocket/src/posix_wrapped_functions/getsockname>
 
-#include <gsocket/src/socket>
+#include <gsocket/socket>
 
 namespace gsocket
 {

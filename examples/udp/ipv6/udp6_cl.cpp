@@ -1,6 +1,6 @@
 #include <gsocket/udp_classes/udpClient>
 #include <gsocket/socket>
-#include <gsocket/utils>
+#include <gsocket/misc/utils>
 int main(){
     udpClient cl("::1",8080,inet6);
     std::string buff;

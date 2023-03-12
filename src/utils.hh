@@ -8,7 +8,7 @@
 #include <netdb.h>
 #include <sys/ioctl.h>
 
-#include <gsocket/src/enums.hh>
+#include <gsocket/misc/enums.hh>
 struct Addr4{
     std::string host = std::string(16,'\x00');
     uint16_t port;

@@ -15,7 +15,8 @@ cd https://github.com/Gurguii/socketlib
 **Run the installation script**  
 ```bash
 sudo bash ./scripts/install.sh
-```    
+```  
+Note that you can also manually install it, there is nothing special happening in the installation script   
  
 ## Using the library
   
