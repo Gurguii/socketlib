@@ -84,3 +84,11 @@ install(FILES src/socket.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NA
 install(DIRECTORY tcp_classes DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/)
 install(DIRECTORY udp_classes DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/)
 install(FILES src/enums.hh src/utils.hh src/utils templates/templates DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/misc)
+
+#get_target_property(GSOCKET_LIB_DIR ${PROJECT_NAME} LIBRARY_OUTPUT_DIRECTORY)
+#get_target_property(GSOCKET_INCLUDE_DIR ${PROJECT_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+
+# Print installation paths to scripts/.installpaths
+file(WRITE ${PROJECT_BINARY_DIR}/../scripts/.installpaths "includedir=${CMAKE_INSTALL_FULL_INCLUDEDIR}/${PROJECT_NAME}\n")
+file(APPEND ${PROJECT_BINARY_DIR}/../scripts/.installpaths "libdir=${CMAKE_INSTALL_FULL_LIBDIR}/lib${PROJECT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}*\n")
+file(APPEND ${PROJECT_BINARY_DIR}/../scripts/.installpaths "builddir=${PROJECT_BINARY_DIR}\n")
