@@ -6,9 +6,9 @@ function delete(){
 	for i in "$@"; do
 		rm -rf $i
 		if [[ $? -eq 0 ]]; then
-			printf "Removing "$i" [OK]\n"
+			printf "Removing "$i" [OK]\n" | tee -a "$debug_file"
 		else
-			printf "Removing "$i" [FAILED]\n"
+			printf "Removing "$i" [FAILED]\n" | tee -a "$debug_file"
 			exit 1
 		fi
 	done
@@ -30,7 +30,7 @@ if ! [[ -e "$installpathsfile" ]]; then
 	exit 1
 fi
 
-echo "[+] Starting gsocket removal - $(date '+%D@%R')" | tee -a "$debug_file"
+printf "[+] Starting gsocket removal - %s\n" "$(date '+%D@%R')" | tee -a "$debug_file"
 
 # Include .installpaths (contains absolute paths of installed files)
 source "$installpathsfile"

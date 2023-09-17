@@ -1,0 +1,3 @@
+includedir=/usr/local/include/gsocket
+libdir=/usr/local/lib/libgsocket.so*
+builddir=/home/gurgui/github/socketlib/build

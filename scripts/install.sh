@@ -24,6 +24,7 @@ debug_file="$script_dir/.install.debug"
 
 echo "[+] Starting gsocket installation - $(date '+%D@%R')" | tee -a "$debug_file" 
 
+# Get a valid package manager for current system
 declare -A packagemanagers
 packagemanagers['apt-get']="apt-get install -y"
 packagemanagers['apt']="apt install -y"
