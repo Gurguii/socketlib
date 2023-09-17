@@ -1,3 +1,6 @@
 todo.txt
 .vscode
 build
+scripts/.install.debug
+scripts/.installpaths
+scripts/.uninstall.debug

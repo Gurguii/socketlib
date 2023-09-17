@@ -19,33 +19,22 @@ sudo bash ./scripts/install.sh
 Note that you can also manually install it, there is nothing special happening in the installation script   
  
 ## Using the library
-  
-### Simple tcp(Ipv4) client server example ###
-```cpp
-//server.cpp
-#include <gsocket/tcp_classes/tcpServer>
+```cpp 
+//tcpclient.cpp
+#include <gsocket/gsocket.hh>
 int main(){
-    // store data
-    std::string buffer; 
-    // tcpServer constructor binds it to addr port
-    tcpServer sv("127.0.0.1",8080); 
-    // function blocks till connection arrives
-    auto client = sv.acceptConnection(); 
-    // function blocks until data received or error/connection closed 
-    client.awaitData(buffer);
-    std::cout << "received: " << buffer << "\n";
-} 
-```
-```cpp
-//client.cpp
-#include <gsocket/tcp_classes/tcpClient>
-int main(){
-    // tcpClient constructor connects to addr port
-    tcpClient cl("127.0.0.1",8080);
+    // create tcp socket
+    Socket client(inet, tcp, BLOCK);
+    // connect to target   
+    if(client.connect("127.0.0.1", 9001)){
+        std::cerr << "couldn't connect to target\n";
+        return 1;
+    }
     // send data
-    cl.send("hello from client\n");
-    // close the socket's file descriptor
-    cl.close();
+    client.send("Hello World!\n");
+    // close socket    
+    client.close();
+    return 0;
 }
 ```  
 Note that this is a super **simple** and straightforward example for both server and client, if you want to see a **more robust** approach (**checking** if binding/connection **succeed**) check **examples**.  
