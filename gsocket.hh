@@ -1,4 +1,3 @@
-// Author: Airán 'Gurguii' Gómez
 // Author: Gurguii
 // Github: https://github.com/Gurguii/socketlib/
 
