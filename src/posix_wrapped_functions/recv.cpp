@@ -1,6 +1,7 @@
 #ifndef __SOCK_RECV
 #define __SOCK_RECV
 #include "../core/socket_wrapper.hh"
+#include <sys/socket.h>
 namespace gsocket {
 std::string __sw::recv() {
   std::string buffer(__IO_BUFFSIZE, '\x00');
@@ -22,6 +23,10 @@ std::string __sw::recv(int bytes) {
     return "";
   };
   return buffer;
+}
+
+int __sw::recv(char *buffer, size_t bytes_to_read) {
+  return (::recv(fd, buffer, bytes_to_read, 0));
 }
 } // namespace gsocket
 

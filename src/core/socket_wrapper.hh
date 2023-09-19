@@ -56,6 +56,7 @@ public:
   /* RECV DATA */
   std::string recv();
   std::string recv(int bytes);
+  int recv(char *buffer, size_t bytes_to_read);
   int recvfrom(msgFrom &data);
   /* AWAIT DATA */
   template <typename T> int awaitData(T &buffer, int timeout = -1);

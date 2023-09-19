@@ -1,5 +1,5 @@
-#ifndef ENUMS
-#define ENUMS
+#ifndef gsocket_enums
+#define gsocket_enums
 #include <cstdint>
 enum class Type : uint8_t {
   tcp = 1,
