@@ -6,9 +6,9 @@ function delete(){
 	for i in "$@"; do
 		rm -rf $i
 		if [[ $? -eq 0 ]]; then
-			printf "Removing "$i" [OK]\n" | tee -a "$debug_file"
+			printf "Removing "$i" [OK]\n" | tee -a "$log_file"
 		else
-			printf "Removing "$i" [FAILED]\n" | tee -a "$debug_file"
+			printf "Removing "$i" [FAILED]\n" | tee -a "$log_file"
 			exit 1
 		fi
 	done
@@ -22,7 +22,7 @@ fi
 # Holds scripts' absolute path
 script_dir=$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 installpathsfile="$script_dir/.installpaths"
-debug_file="$script_dir/.uninstall.debug"
+log_file="$script_dir/logs/uninstall.log"
 
 # Check that .installpaths file exists
 if ! [[ -e "$installpathsfile" ]]; then
@@ -30,10 +30,20 @@ if ! [[ -e "$installpathsfile" ]]; then
 	exit 1
 fi
 
-printf "[+] Starting gsocket removal - %s\n" "$(date '+%D@%R')" | tee -a "$debug_file"
+printf "[+] Starting gsocket removal - %s\n" "$(date '+%D@%R')" | tee -a "$log_file"
 
 # Include .installpaths (contains absolute paths of installed files)
 source "$installpathsfile"
 
-# Delete call to remove everything installed 
-delete "$includedir" "$libdir" "$builddir" 
+if [[ -z $libdir || -z $includedir || -z $builddir ]]; then
+	printf "missing some path in $installpathsfile\n"
+	exit 1
+fi
+
+# Delete call to remove everything installed
+for path in ${libdir[@]}; do
+	delete "$path"
+done
+delete "$includedir"
+delete "$builddir"
+delete "$installpathsfile"

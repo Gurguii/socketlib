@@ -18,4 +18,8 @@ for file in "$scripts"; do
 done
 
 bash "$uninstallscript"
+if (( $? )); then
+	# uninstall script failed
+	exit 1
+fi
 bash "$installscript"

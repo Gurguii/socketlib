@@ -7,12 +7,14 @@ enum class Type : uint8_t {
   udp = 2
 #define udp Type::udp
 };
+
 enum class Domain : uint8_t {
   inet = 2,
 #define inet Domain::inet
   inet6 = 10
 #define inet6 Domain::inet6
 };
+
 enum class Behaviour : uint8_t {
   noblock = 0,
 #define NOBLOCK Behaviour::noblock

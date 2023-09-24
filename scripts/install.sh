@@ -2,11 +2,11 @@
 
 # Receives 3 params - <command2run> <sucessmessage> <failmessage>
 function runcommand(){
-	$1 &>"$debug_file"
+	$1 &>/dev/null
 	if [[ $? -eq 0 ]]; then 
-		printf "%s\n" "$2"
+		printf "%s [GOOD]\n" "$2" | tee -a "$log_file"
 	else 
-		printf "%s\n" "$3"
+		printf "%s [FAIL]\n" "$3" | tee -a "$log_file"
 		exit 1
 	fi
 }
@@ -20,9 +20,8 @@ fi
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Debug file path(will have output in case debugging of installation failing is required/desired)
-debug_file="$script_dir/.install.debug"
-
-echo "[+] Starting gsocket installation - $(date '+%D@%R')" | tee -a "$debug_file" 
+log_file="$script_dir/logs/install.log"
+echo "[+] Starting gsocket installation - $(date '+%D@%R')" | tee -a "$log_file" 
 
 # Get a valid package manager for current system
 declare -A packagemanagers
@@ -46,16 +45,16 @@ for tool in ${required_commands[@]}; do
 	if ! command -v "$tool" &>/dev/null; then 
 		read -r -p "$tool is required but not installed, install? y/n " ans
 		if [[ ${ans,,} == "y" || ${ans,} == yes ]]; then
-			printf "Installing %s\n" "$tool" | tee -a "$debug_file"	
+			printf "Installing %s\n" "$tool" | tee -a "$log_file"	
 			# This is smth like 'apt install -y cmake'
-			$package_manager $tool 1>/dev/null 2>> "$debug_file"
+			$package_manager $tool 1>/dev/null 2>> "$log_file"
 			if ! command -v "$tool" &>/dev/null; then 
-				printf "Problem installing %s\nmore information can be found @ %s\nexiting...\n" "$tool" "$debug_file"
+				printf "Problem installing %s\nmore information can be found @ %s\nexiting...\n" "$tool" "$log_file"
 				exit 1
 			fi
 		else 
 			printf "Can't continue the installation...\n"
-			exit 0
+			exit 1
 		fi
 	fi
 done
@@ -68,10 +67,18 @@ if [[ ! -e "$path" ]]; then
 fi
 cd "$path"
 
-cmake .. &>>"$debug_file"
+cmake .. &>/dev/null 
 
-runcommand "cmake .." "Running 'cmake ..' - building library [OK]" "Running 'cmake ..' - building library [FAILED]" 
-runcommand "make install" "Running 'make install' - installing library in the system [OK]" "Running 'make install' - installing library in the system [FAILED]" 
-runcommand "ldconfig" "Running 'ldconfig' - refresh system includes [OK]" "Running 'ldconfig' - refresh system includes [FAILED]" 
+runcommand "cmake .." "Running 'cmake ..' - building library" 
+runcommand "make install" "Running 'make install' - installing library in the system" 
+runcommand "ldconfig" "Running 'ldconfig' - refresh system includes " 
 
-printf "[+] - Done, gsocket successfully installed!\n" | tee -a "$debug_file"
+if ! ldconfig -p | grep "libgsocket" &>/dev/null; then
+	read -rp "WARNING libgsocket not detected in `ldconfig -v` what means the library won't be detected during runtime, try to fix? y/n " ans
+	if [[ ${ans,,} == "y" || ${ans,,} == "yes" ]]; then
+		runcommand "printf "/usr/local/lib" > /etc/ld.so.conf.d/gsocket.conf" "Adding '/usr/local/lib' to /etc/ld.so.conf.d/gsocket.conf"
+		runcommand "ldconfig" "Running 'ldconfig' - refresh system includes" 
+	fi
+fi
+
+printf "[+] - Done, gsocket successfully installed!\n\n" | tee -a "$log_file"

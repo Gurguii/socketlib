@@ -1,6 +1,7 @@
 todo.txt
 .vscode
 build
-scripts/.install.debug
+scripts/logs
 scripts/.installpaths
-scripts/.uninstall.debug
+TODO.txt
+doxygen

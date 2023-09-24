@@ -66,3 +66,12 @@ install(FILES src/enums.hh src/socket.hh src/utils.hh DESTINATION ${CMAKE_INSTAL
 install(FILES src/core/socket_wrapper.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/src/core/)
 install(FILES templates/templates.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/templates/)
 install(FILES gsocket.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/)
+
+# Write installation paths to scripts/.installpaths
+file(
+	WRITE "scripts/.installpaths" "libdir=(${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lib${PROJECT_NAME}.so 
+	${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lib${PROJECT_NAME}.so.1 
+	${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lib${PROJECT_NAME}.so.1.0.0)\n"
+)
+file(APPEND "scripts/.installpaths" "includedir=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}\n")
+file(APPEND "scripts/.installpaths" "builddir=${CMAKE_BINARY_DIR}\n")

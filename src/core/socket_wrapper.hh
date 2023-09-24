@@ -1,5 +1,4 @@
-#ifndef SOCKET_WRAPPER_HH
-#define SOCKET_WRAPPER_HH
+#pragma once
 #include <arpa/inet.h>
 #include <cstring>
 #include <ifaddrs.h>
@@ -14,6 +13,7 @@
 #include <unistd.h>
 
 #include "../utils.hh"
+
 #define sockError strerror(errno)
 #define __IO_BUFFSIZE 4096
 
@@ -53,11 +53,30 @@ public:
   template <typename... Args> int send(Args &&...args);
   int sendto(str_view host, uint16_t port, str_view msg);
   template <typename... Args> int sendto(Args &&...args);
+
+
+
+
+
   /* RECV DATA */
+  /* recv all available data from socket
+   * @return std::string with the contents */
   std::string recv();
+  /* recv `bytes` bytes from socket 
+   * @returns std::string with the contents */
   std::string recv(int bytes);
+  /* populates `buffer` with `bytes_to_read` bytes 
+   * @returns number of bytes received or -1 for errors */
   int recv(char *buffer, size_t bytes_to_read);
+  /* mainly used with udp sockets
+   * takes `struct msgFrom` as parameter.
+   * It will populate the `struct msgFrom` with the
+   * incoming host - port - message */
   int recvfrom(msgFrom &data);
+  
+
+
+
   /* AWAIT DATA */
   template <typename T> int awaitData(T &buffer, int timeout = -1);
   int awaitDataFrom(msgFrom &__sockHostData, int timeout);
@@ -66,7 +85,7 @@ public:
   int bind(uint16_t port);
   template <typename... Args> int bind(Args &&...args);
   /* LISTEN */
-  int listen(int maxConns);
+  int listen(int maxConns = 3);
   /* ACCEPT */
   int accept();
   template <typename AddrStruct> int accept(AddrStruct &a);
@@ -75,4 +94,3 @@ public:
   Address getpeername();
 };
 } // namespace gsocket
-#endif

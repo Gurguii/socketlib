@@ -7,6 +7,7 @@ int __sw::accept() {
   socklen_t addrlen = sizeof(addr);
   return ::accept(fd, &addr, &addrlen);
 }
+
 template <typename AddrStruct> int __sw::accept(AddrStruct &a) {
   sockaddr addr;
   socklen_t addrlen = sizeof(addr);

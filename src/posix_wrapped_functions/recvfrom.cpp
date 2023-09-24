@@ -20,6 +20,8 @@ int __sw::recvfrom(msgFrom &data) {
     data.addr.host = ad;
     data.addr.port = htons(addr.sin6_port);
     return n;
+  }else{
+    return -1;
   }
 }
 } // namespace gsocket
