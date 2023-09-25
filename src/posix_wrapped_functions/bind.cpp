@@ -1,9 +1,7 @@
-#ifndef __SOCK_BIND
-#define __SOCK_BIND
 #include "../core/socket_wrapper.hh"
 constexpr int opt = 1;
 namespace gsocket {
-int __sw::bind(str_view addr, ui16 p) {
+int __sw::bind(std::string_view addr, uint16_t p) {
   if (domain == AF_INET) {
     sockaddr_in ad{.sin_family = domain, .sin_port = htons(p)};
     return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
@@ -23,7 +21,7 @@ int __sw::bind(str_view addr, ui16 p) {
     return -1;
   }
 }
-int __sw::bind(ui16 p) {
+int __sw::bind(uint16_t p) {
   if (domain == AF_INET) {
     sockaddr_in addr{
         .sin_family = AF_INET, .sin_port = htons(p), .sin_addr{INADDR_ANY}};
@@ -44,5 +42,3 @@ template <typename... Args> int bind(Args &&...args) {
   return bind(std::forward<Args>(args)...);
 }
 } // namespace gsocket
-
-#endif

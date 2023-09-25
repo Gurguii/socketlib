@@ -1,5 +1,3 @@
-#ifndef __SOCK_ACCEPT
-#define __SOCK_ACCEPT
 #include "../core/socket_wrapper.hh"
 namespace gsocket {
 int __sw::accept() {
@@ -11,7 +9,7 @@ int __sw::accept() {
 template <typename AddrStruct> int __sw::accept(AddrStruct &a) {
   sockaddr addr;
   socklen_t addrlen = sizeof(addr);
-  ui8 n = ::accept(fd, &addr, &addrlen);
+  uint8_t n = ::accept(fd, &addr, &addrlen);
   if (addr.sa_family == AF_INET) {
     a.host = inet_ntoa(reinterpret_cast<sockaddr_in *>(&addr)->sin_addr);
     a.port = htons(reinterpret_cast<sockaddr_in *>(&addr)->sin_port);
@@ -23,5 +21,3 @@ template <typename AddrStruct> int __sw::accept(AddrStruct &a) {
   return n;
 }
 } // namespace gsocket
-
-#endif

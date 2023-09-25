@@ -1,10 +1,8 @@
-#ifndef __SOCK_AWAIT
-#define __SOCK_AWAIT
 #include "../core/socket_wrapper.hh"
 #include <cstdint>
 constexpr uint16_t __TIMEOUT_MULTIPLIER = 1000;
 namespace gsocket {
-template <typename T> int __sw::awaitData(T &buff, int timeout) {
+int __sw::awaitData(std::string &buff, int timeout) {
   auto fdpol = pollfd{.fd = fd, .events = POLLIN};
   int r = poll(&fdpol, 1, (timeout > 0 ? timeout * __TIMEOUT_MULTIPLIER : -1));
   if (r > 0 && (fdpol.revents & POLLIN)) {
@@ -42,4 +40,3 @@ int __sw::awaitDataFrom(msgFrom &__data, int timeout = -1) {
   return -2;
 }
 } // namespace gsocket
-#endif

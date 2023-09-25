@@ -23,7 +23,7 @@ public:
   Socket(Domain d, Type t, Behaviour b);
   Socket(uint8_t dom, uint8_t typ, uint8_t b);
   Socket(uint8_t fd);
-  /* returns duplicated `Socket` instance's fd */ 
+  /* returns duplicated `Socket`'s file descriptor */ 
   Socket dup();
   Socket dup2(int newfd);
   Socket dup3(int newfd, int flags);

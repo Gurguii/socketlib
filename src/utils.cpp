@@ -5,10 +5,10 @@
 #include "core/socket_wrapper.hh"
 
 namespace gsocket::utils {
-str getIpByIface(str_view ifa, Domain &&t = inet) {
+str getIpByIface(std::string_view ifa, Domain &&t = ipv4) {
   ifaddrs *addrs = nullptr;
   getifaddrs(&addrs);
-  str iface((t == inet ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN), '\x00');
+  str iface((t == ipv4 ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN), '\x00');
   for (auto a = addrs; a != nullptr; a = a->ifa_next) {
     if (a->ifa_addr->sa_family == static_cast<int>(t)) {
       if (strcmp(ifa.data(), a->ifa_name)) {
@@ -29,7 +29,7 @@ str getIpByIface(str_view ifa, Domain &&t = inet) {
   freeifaddrs(addrs);
   return iface;
 }
-int getIdByIp(str_view addr) {
+int getIdByIp(std::string_view addr) {
   ifaddrs *addrs = nullptr;
   getifaddrs(&addrs);
   str ad(INET6_ADDRSTRLEN, '\x00');
@@ -49,7 +49,7 @@ int getIdByIp(str_view addr) {
   }
   return -1;
 }
-addressInfo getaddrinfo(str_view domain, str_view service,
+addressInfo getaddrinfo(std::string_view domain, std::string_view service,
                         socketPreferences &hints) {
   addrinfo *addrs = nullptr;
   addrinfo h{hints.flags,
@@ -77,7 +77,7 @@ std::pair<std::string, std::string> getnameinfo(addressInfo &addr) {
 template <typename T> std::pair<T, T> getsocketpair(Type t, Behaviour b) {
   std::pair<int, int> fds;
   ::socketpair(AF_LOCAL,
-               (b == BLOCK ? static_cast<int>(t)
+               (b == block ? static_cast<int>(t)
                            : (static_cast<int>(t) | SOCK_NONBLOCK)),
                0, &fds.first);
   return fds;

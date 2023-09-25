@@ -1,8 +1,6 @@
-#ifndef __SOCK_SENDTO
-#define __SOCK_SENDTO
 #include "../core/socket_wrapper.hh"
 namespace gsocket {
-int __sw::sendto(str_view host, ui16 port, str_view msg) {
+int __sw::sendto(std::string_view host, uint16_t port, std::string_view msg) {
   if (domain == AF_INET) {
     sockaddr_in addr{
         .sin_family = domain,
@@ -21,10 +19,11 @@ int __sw::sendto(str_view host, ui16 port, str_view msg) {
     return ::sendto(fd, msg.data(), msg.size(), 0,
                     reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
   }
+  else{
+    return -1;
+  }
 }
 template <typename... Args> int sendto(Args &&...args) {
   return sendto(std::forward<Args>(args)...);
 };
 } // namespace gsocket
-
-#endif

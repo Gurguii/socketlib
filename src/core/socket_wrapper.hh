@@ -1,4 +1,5 @@
 #pragma once
+
 #include <arpa/inet.h>
 #include <cstring>
 #include <ifaddrs.h>
@@ -18,79 +19,280 @@
 #define __IO_BUFFSIZE 4096
 
 namespace gsocket {
-using ui16 = uint16_t;
-using ui8 = uint8_t;
-using str = std::string;
-using str_view = std::string_view;
-class __sw {
-protected:
-  __sw(Domain d, Type t, Behaviour b);
-  __sw(ui8 domain, ui8 type, ui8 protocol);
-  __sw(ui8 fd);
-  ~__sw();
+  /**
+   * @brief The base socket wrapper class.
+   */
+  class __sw {
+  protected:
+    /**
+     * @brief Constructor with domain, type, and behavior parameters.
+     * @param d Domain of the socket.
+     * @param t Type of the socket.
+     * @param b Behavior of the socket.
+     */
+    __sw(Domain d, Type t, Behaviour b);
+    
+    /**
+     * @brief Constructor with domain, type, and protocol parameters.
+     * @param domain Domain of the socket.
+     * @param type Type of the socket.
+     * @param protocol Protocol of the socket.
+     */
+    __sw(uint8_t domain, uint8_t type, uint8_t protocol);
+    
+    /**
+     * @brief Constructor with file descriptor parameter.
+     * @param fd File descriptor of the socket.
+     */
+    __sw(uint8_t fd);
+    
+    /**
+     * @brief Destructor for the socket wrapper class.
+     */
+    ~__sw();
 
-public:
-  ui8 domain, type, fd;
-  /* GET FILE DESCRIPTOR */
-  const int getFD() { return fd; }
-  /* CLOSE */
-  int close();
-  /* CONNECT */
-  int connect(const char *&host, int &port);
-  int connect(const char *&&host, int &&port);
-  int connect(addrinfo *const addr);
-  int connect(addressInfo *addr);
-  int connect(sockaddr *addr, socklen_t &addrlen);
-  int connect(std::string_view &host, uint16_t &port);
-  template <typename... Args> int connect(Args &&...args);
-  /* SEND DATA */
-  int send(str_view data);
-  int send(str_view data, int &bytes);
-  int send(str_view data, int &&bytes);
-  int send(const char *&data);
-  int send(const char *&&data);
-  int send(std::string &data);
-  template <typename... Args> int send(Args &&...args);
-  int sendto(str_view host, uint16_t port, str_view msg);
-  template <typename... Args> int sendto(Args &&...args);
+  public:
+    uint8_t domain, type, fd;
+    
+    /**
+     * @brief Get the file descriptor of the socket.
+     * @return The file descriptor.
+     */
+    const int getFD();
 
+    /**
+     * @brief Close the socket.
+     * @return 0 on success, -1 on failure.
+     */
+    int close();
+    /**
+     * @defgroup connect_overloads
+     * @brief overloads of the POSIX connect() function
+     *
+     * @addtogroup connect_overloads
+     * @{ */
 
+    /**
+     * @brief Connect to a remote host.
+     * @param host The host to connect to.
+     * @param port The port to connect to.
+     * @return 0 on success, -1 on failure.
+     */
+    int connect(const char*& host, int& port);
 
+    /**
+     * @brief Move version of the connect function.
+     * @param host The host to connect to.
+     * @param port The port to connect to.
+     * @return 0 on success, -1 on failure.
+     */
+    int connect(const char*&& host, int&& port);
 
+    /**
+     * @brief Connect to a remote host using a given address.
+     * @param addr The socket address to connect to.
+     * @return 0 on success, -1 on failure.
+     */
+    int connect(addrinfo* const addr);
 
-  /* RECV DATA */
-  /* recv all available data from socket
-   * @return std::string with the contents */
-  std::string recv();
-  /* recv `bytes` bytes from socket 
-   * @returns std::string with the contents */
-  std::string recv(int bytes);
-  /* populates `buffer` with `bytes_to_read` bytes 
-   * @returns number of bytes received or -1 for errors */
-  int recv(char *buffer, size_t bytes_to_read);
-  /* mainly used with udp sockets
-   * takes `struct msgFrom` as parameter.
-   * It will populate the `struct msgFrom` with the
-   * incoming host - port - message */
-  int recvfrom(msgFrom &data);
-  
+    /**
+     * @brief Connect to a remote host using a given address info.
+     * @param addr The address info to connect to.
+     * @return 0 on success, -1 on failure.
+     */
+    int connect(addressInfo* addr);
 
+    /**
+     * @brief Connect to a remote host using a given address and length.
+     * @param addr The address to connect to.
+     * @param addrlen The length of the address.
+     * @return 0 on success, -1 on failure.
+     */
+    int connect(sockaddr* addr, socklen_t& addrlen);
 
+    /**
+     * @brief Connect to a remote host using a given host and port.
+     * @param host The host to connect to.
+     * @param port The port to connect to.
+     * @return 0 on success, -1 on failure.
+     */
+    int connect(std::string_view& host, uint16_t& port);
 
-  /* AWAIT DATA */
-  template <typename T> int awaitData(T &buffer, int timeout = -1);
-  int awaitDataFrom(msgFrom &__sockHostData, int timeout);
-  /* BIND */
-  int bind(str_view addr, uint16_t port);
-  int bind(uint16_t port);
-  template <typename... Args> int bind(Args &&...args);
-  /* LISTEN */
-  int listen(int maxConns = 3);
-  /* ACCEPT */
-  int accept();
-  template <typename AddrStruct> int accept(AddrStruct &a);
-  /* RETRIEVE SOCKET DATA */
-  Address getsockname();
-  Address getpeername();
-};
-} // namespace gsocket
+    /**
+     * @brief Variadic template version of the connect function.
+     * @tparam Args The argument types.
+     * @param args The arguments.
+     * @return 0 on success, -1 on failure.
+     */
+    template <typename... Args>
+    int connect(Args&&... args);
+    /**@}*/
+
+    /**
+     * @brief Send data through the socket.
+     * @param data The data to send.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    int send(std::string_view data);
+
+    /**
+     * @brief Send data through the socket and get the number of bytes sent.
+     * @param data The data to send.
+     * @param bytes The number of bytes sent.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    int send(std::string_view data, int& bytes);
+
+    /**
+     * @brief Move version of the send function.
+     * @param data The data to send.
+     * @param bytes The number of bytes sent.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    int send(std::string_view data, int&& bytes);
+
+    /**
+     * @brief Send data through the socket as a C-style string.
+     * @param data The data to send.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    int send(const char*& data);
+
+    /**
+     * @brief Move version of the send function for C-style strings.
+     * @param data The data to send.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    int send(const char*&& data);
+
+    /**
+     * @brief Send data through the socket as a string.
+     * @param data The data to send.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    int send(std::string& data);
+
+    /**
+     * @brief Variadic template version of the send function.
+     * @tparam Args The argument types.
+     * @param args The arguments.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    template <typename... Args>
+    int send(Args&&... args);
+
+    /**
+     * @brief Send data to a specific host and port.
+     * @param host The host to send data to.
+     * @param port The port to send data to.
+     * @param msg The message to send.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    int sendto(std::string_view host, uint16_t port, std::string_view msg);
+
+    /**
+     * @brief Variadic template version of the sendto function.
+     * @tparam Args The argument types.
+     * @param args The arguments.
+     * @return The number of bytes sent, or -1 on failure.
+     */
+    template <typename... Args>
+    int sendto(Args&&... args);
+
+    /**
+     * @brief Receive all available data from the socket.
+     * @return The received data as a string.
+     */
+    std::string recv();
+
+    /**
+     * @brief Receive a specified number of bytes from the socket.
+     * @param bytes The number of bytes to receive.
+     * @return The received data as a string.
+     */
+    std::string recv(int bytes);
+
+    /**
+     * @brief Receive a specified number of bytes into a buffer.
+     * @param buffer The buffer to receive the data.
+     * @param bytes_to_read The number of bytes to read.
+     * @return The number of bytes received, or -1 on failure.
+     */
+    int recv(char* buffer, size_t bytes_to_read);
+
+    /**
+     * @brief Receive data and populate the given msgFrom struct.
+     * @param data The msgFrom struct to populate.
+     * @return The number of bytes received, or -1 on failure.
+     */
+    int recvfrom(msgFrom& data);
+
+    /**
+     * @brief Wait for data in the socket for a specified timeout.
+     * @param buffer The buffer to store the received data.
+     * @param timeout The timeout duration in seconds.
+     * @return -1 on errors, -2 on timeout, or the amount of bytes read.
+     */
+    int awaitData(std::string& buffer, int timeout = -1);
+
+    /**
+     * @brief Wait for data from a specific host for a specified timeout.
+     * @param __sockHostData The msgFrom struct to populate.
+     * @param timeout The timeout duration in seconds.
+     * @return -1 on errors, -2 on timeout, or the amount of bytes read.
+     */
+    int awaitDataFrom(msgFrom& __sockHostData, int timeout);
+
+    /**
+     * @brief Bind the socket to a specific address and port.
+     * @param addr The address to bind to.
+     * @param port The port to bind to.
+     * @return 0 on success, -1 on failure.
+     */
+    int bind(std::string_view addr, uint16_t port);
+
+    /**
+     * @brief Bind the socket to a specific port.
+     * @param port The port to bind to.
+     * @return 0 on success, -1 on failure.
+     */
+    int bind(uint16_t port);
+
+    /**
+     * @brief Variadic template version of the bind function.
+     * @tparam Args The argument types.
+     * @param args The arguments.
+     * @return 0 on success, -1 on failure.
+     */
+    template <typename... Args>
+    int bind(Args&&... args);
+
+    /**
+     * @brief Listen for incoming connections.
+     * @param maxConns The maximum number of connections to allow.
+     * @return 0 on success, -1 on failure.
+     */
+    int listen(int maxConns = 3);
+
+    /**
+     * @brief Accept an incoming connection.
+     * @return The file descriptor of the accepted connection, or -1 on failure.
+     */
+    int accept();
+    /**
+    * @brief Accept an incoming conection.
+    * @return The file descriptor of the accepted connection, or -1 on failure.
+    */
+    template <typename AddrStruct> int accept(AddrStruct &a);
+    /**
+    * @brief Get socket host and port
+    * @return `struct Address`
+    */
+    Address getsockname();
+    /**
+    * @brief Get socket's peer host and port
+    * @return `struct Address`
+    */
+    Address getpeername();
+  };
+}

@@ -1,5 +1,3 @@
-#ifndef __SOCK_GETSOCKNAME
-#define __SOCK_GETSOCKNAME
 #include "../core/socket_wrapper.hh"
 namespace gsocket {
 Address __sw::getsockname() {
@@ -19,4 +17,3 @@ Address __sw::getsockname() {
   return Address{};
 }
 } // namespace gsocket
-#endif

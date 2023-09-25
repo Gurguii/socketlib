@@ -1,5 +1,3 @@
-#ifndef __SOCK_CONNECT
-#define __SOCK_CONNECT
 #include "../core/socket_wrapper.hh"
 namespace gsocket {
 int __sw::connect(const char *&h, int &p) {
@@ -55,5 +53,3 @@ template <typename... Args> int connect(Args &&...args) {
   return connect(std::forward<Args>(args)...);
 }
 } // namespace gsocket
-
-#endif

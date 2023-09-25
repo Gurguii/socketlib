@@ -1,5 +1,3 @@
-#ifndef __SOCK_RECV
-#define __SOCK_RECV
 #include "../core/socket_wrapper.hh"
 #include <sys/socket.h>
 namespace gsocket {
@@ -29,5 +27,3 @@ int __sw::recv(char *buffer, size_t bytes_to_read) {
   return (::recv(fd, buffer, bytes_to_read, 0));
 }
 } // namespace gsocket
-
-#endif

@@ -1,5 +1,3 @@
-#ifndef __SOCK_RECVFROM
-#define __SOCK_RECVFROM
 #include "../core/socket_wrapper.hh"
 namespace gsocket {
 int __sw::recvfrom(msgFrom &data) {
@@ -25,5 +23,3 @@ int __sw::recvfrom(msgFrom &data) {
   }
 }
 } // namespace gsocket
-
-#endif
