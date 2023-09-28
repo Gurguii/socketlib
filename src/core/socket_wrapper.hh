@@ -13,7 +13,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "../utils.hh"
+#include "../enums.hh"
+#include "../structs.hpp"
+#include "../utils/fd.hpp"
+#include "../utils/socket.hpp"
+#include "../utils/net.hpp"
 
 #define sockError strerror(errno)
 #define __IO_BUFFSIZE 4096
@@ -22,7 +26,7 @@ namespace gsocket {
   /**
    * @brief The base socket wrapper class.
    */
-  class __sw {
+  class __socket_operations {
   protected:
     /**
      * @brief Constructor with domain, type, and behavior parameters.
@@ -30,7 +34,7 @@ namespace gsocket {
      * @param t Type of the socket.
      * @param b Behavior of the socket.
      */
-    __sw(Domain d, Type t, Behaviour b);
+    __socket_operations(Domain d, Type t, Behaviour b);
     
     /**
      * @brief Constructor with domain, type, and protocol parameters.
@@ -38,18 +42,18 @@ namespace gsocket {
      * @param type Type of the socket.
      * @param protocol Protocol of the socket.
      */
-    __sw(uint8_t domain, uint8_t type, uint8_t protocol);
+    __socket_operations(uint8_t domain, uint8_t type, uint8_t protocol);
     
     /**
      * @brief Constructor with file descriptor parameter.
      * @param fd File descriptor of the socket.
      */
-    __sw(uint8_t fd);
+    __socket_operations(uint8_t fd);
     
     /**
      * @brief Destructor for the socket wrapper class.
      */
-    ~__sw();
+    ~__socket_operations();
 
   public:
     uint8_t domain, type, fd;
@@ -119,7 +123,7 @@ namespace gsocket {
     int connect(std::string_view& host, uint16_t& port);
 
     /**
-     * @brief Variadic template version of the connect function.
+     * @brief Perfect forwarding for the connect function.
      * @tparam Args The argument types.
      * @param args The arguments.
      * @return 0 on success, -1 on failure.
@@ -173,7 +177,7 @@ namespace gsocket {
     int send(std::string& data);
 
     /**
-     * @brief Variadic template version of the send function.
+     * @brief Perfect forwarding for the send function.
      * @tparam Args The argument types.
      * @param args The arguments.
      * @return The number of bytes sent, or -1 on failure.
@@ -191,7 +195,7 @@ namespace gsocket {
     int sendto(std::string_view host, uint16_t port, std::string_view msg);
 
     /**
-     * @brief Variadic template version of the sendto function.
+     * @brief Perfect forwarding for the sendto function.
      * @tparam Args The argument types.
      * @param args The arguments.
      * @return The number of bytes sent, or -1 on failure.
@@ -259,8 +263,8 @@ namespace gsocket {
     int bind(uint16_t port);
 
     /**
-     * @brief Variadic template version of the bind function.
-     * @tparam Args The argument types.
+     * @brief Perfect forwarding for the bind function.
+     * @param Args The argument types.
      * @param args The arguments.
      * @return 0 on success, -1 on failure.
      */
@@ -286,13 +290,13 @@ namespace gsocket {
     template <typename AddrStruct> int accept(AddrStruct &a);
     /**
     * @brief Get socket host and port
-    * @return `struct Address`
+    * @return `struct Addr6`
     */
-    Address getsockname();
+    Addr6 getsockname();
     /**
     * @brief Get socket's peer host and port
-    * @return `struct Address`
+    * @return `struct Addr6`
     */
-    Address getpeername();
+    Addr6 getpeername();
   };
 }

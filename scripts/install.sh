@@ -6,7 +6,7 @@ function runcommand(){
 	if [[ $? -eq 0 ]]; then 
 		printf "%s [GOOD]\n" "$2" | tee -a "$log_file"
 	else 
-		printf "%s [FAIL]\n" "$3" | tee -a "$log_file"
+		printf "%s [FAIL]\n" "$2" | tee -a "$log_file"
 		exit 1
 	fi
 }

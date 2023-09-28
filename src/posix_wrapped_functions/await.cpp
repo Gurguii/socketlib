@@ -2,7 +2,7 @@
 #include <cstdint>
 constexpr uint16_t __TIMEOUT_MULTIPLIER = 1000;
 namespace gsocket {
-int __sw::awaitData(std::string &buff, int timeout) {
+int __socket_operations::awaitData(std::string &buff, int timeout) {
   auto fdpol = pollfd{.fd = fd, .events = POLLIN};
   int r = poll(&fdpol, 1, (timeout > 0 ? timeout * __TIMEOUT_MULTIPLIER : -1));
   if (r > 0 && (fdpol.revents & POLLIN)) {
@@ -15,7 +15,7 @@ int __sw::awaitData(std::string &buff, int timeout) {
   }
   return -2;
 }
-int __sw::awaitDataFrom(msgFrom &__data, int timeout = -1) {
+int __socket_operations::awaitDataFrom(msgFrom &__data, int timeout = -1) {
   auto _s_poll = pollfd{.fd = fd, .events = POLLIN};
   int event, avBytes, rStatus;
   event = poll(&_s_poll, 1,

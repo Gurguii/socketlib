@@ -1,6 +1,6 @@
 #include "../core/socket_wrapper.hh"
 namespace gsocket {
-int __sw::recvfrom(msgFrom &data) {
+int __socket_operations::recvfrom(msgFrom &data) {
   if (domain == AF_INET) {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);

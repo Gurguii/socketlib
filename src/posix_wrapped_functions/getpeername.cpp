@@ -1,7 +1,7 @@
 #include "../core/socket_wrapper.hh"
 
 namespace gsocket {
-Address __sw::getpeername() {
+Addr6 __socket_operations::getpeername() {
   if (domain == AF_INET) {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
@@ -15,6 +15,6 @@ Address __sw::getpeername() {
     inet_ntop(AF_INET6, &addr.sin6_addr, ip.data(), INET6_ADDRSTRLEN);
     return {ip, htons(addr.sin6_port)};
   }
-  return Address();
+  return Addr6();
 }
 } // namespace gsocket

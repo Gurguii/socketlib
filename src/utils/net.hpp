@@ -1,36 +1,14 @@
-#ifndef UTILS
-#define UTILS
-
-#include "enums.hh"
-#include <netdb.h>
+#pragma once
+#include <ifaddrs.h>
 #include <string>
-#include <sys/ioctl.h>
+#include <cstring>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <net/if.h>
+#include "../enums.hh"
 
-/**
- * @brief Stores IPv4 IP and port.
- */
-struct Addr4 {
-  std::string host = std::string(16, '\x00');
-  uint16_t port;
-};
-
-/**
- * @brief Simple structure used to store an IPv4/IPv6 IP and a port.
- */
-struct Address {
-  std::string host = std::string(46, '\x00');
-  uint16_t port;
-};
-
-/**
- * @brief Used in some functions (such as readfrom()) as a parameter/return value.
- *        Contains `struct Address` with host-port and std::string which holds the received msg.
- */
-struct msgFrom {
-  Address addr;
-  std::string msg;
-};
-
+namespace gsocket
+{
 /**
  * @brief Used by getaddrinfo(). Contains preferences (hints) in order to retrieve
  *        a socket with desired characteristics.
@@ -60,10 +38,6 @@ public:
     freeaddrinfo(head);
   }
 };
-
-namespace gsocket::utils {
-using str = std::string;
-
 /**
  * @brief Returns a std::string representing the IP of the given interface.
  *        E.g getIpByIface("eth0") -> 192.168.1.20
@@ -71,7 +45,7 @@ using str = std::string;
  * @param t The domain (IPv4 or IPv6).
  * @return The IP address as a std::string.
  */
-str getIpByIface(std::string_view ifa, Domain&& t);
+std::string getIpByIface(std::string_view ifa, Domain&& t);
 
 /**
  * @brief Returns an int representing the given interface's names.
@@ -97,25 +71,4 @@ addressInfo getaddrinfo(std::string_view domain, std::string_view service, socke
  */
 std::pair<std::string, std::string> getnameinfo(addressInfo& addr);
 
-/**
- * @brief Gets a pair of connected sockets.
- * @param type The socket type.
- * @param behaviour The socket behaviour.
- * @return A std::pair with a pair of AF_UNIX / AF_TIPC connected sockets.
- */
-std::pair<int, int> getsocketpair(Type type, Behaviour behaviour);
-
-/**
- * @brief Gets the amount of available bytes in a socket.
- * @param fd The file descriptor of the socket.
- * @return The number of available bytes.
- */
-constexpr auto availableBytes = [](int fd) {
-  int ab;
-  ioctl(fd, FIONREAD, &ab);
-  return ab;
-};
-} // namespace gsocket::utils
-
-#endif
-
+}

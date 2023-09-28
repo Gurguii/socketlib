@@ -50,7 +50,7 @@ template <class gsocketClass> int listen(gsocketClass *ptr, int __maxconns) {
 
 // ACCEPTCONNECTION
 template <class gsocketClass>
-Socket acceptConnection(gsocketClass *ptr, Address *buff) {
+Socket acceptConnection(gsocketClass *ptr, Addr6 *buff) {
   sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
   int fd = ::accept(ptr->fd, reinterpret_cast<sockaddr *>(&addr), &addrlen);
@@ -64,12 +64,12 @@ Socket acceptConnection(gsocketClass *ptr, Address *buff) {
 
 // GETSOCKNAME
 template <class gsocketClass>
-std::optional<Address> getsockname(gsocketClass *ptr, Address *buff) {
+std::optional<Addr6> getsockname(gsocketClass *ptr, Addr6 *buff) {
   sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
   int s = ::getsockname(ptr->fd, reinterpret_cast<sockaddr *>(&addr), &addrlen);
   if (buff == nullptr) {
-    return std::optional<Address>(
+    return std::optional<Addr6>(
         {inet_ntoa(addr.sin_addr), htons(addr.sin_port)});
   }
   buff->host = inet_ntoa(addr.sin_addr);

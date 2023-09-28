@@ -1,7 +1,7 @@
 #include "../core/socket_wrapper.hh"
 constexpr int opt = 1;
 namespace gsocket {
-int __sw::bind(std::string_view addr, uint16_t p) {
+int __socket_operations::bind(std::string_view addr, uint16_t p) {
   if (domain == AF_INET) {
     sockaddr_in ad{.sin_family = domain, .sin_port = htons(p)};
     return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
@@ -12,7 +12,7 @@ int __sw::bind(std::string_view addr, uint16_t p) {
     sockaddr_in6 ad{.sin6_family = AF_INET6,
                     .sin6_port = htons(p),
                     .sin6_scope_id =
-                        static_cast<uint32_t>(gsocket::utils::getIdByIp(addr))};
+                        static_cast<uint32_t>(gsocket::getIdByIp(addr))};
     return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
                        sizeof(opt)) |
             !inet_pton(domain, addr.data(), &ad.sin6_addr)) |
@@ -21,7 +21,7 @@ int __sw::bind(std::string_view addr, uint16_t p) {
     return -1;
   }
 }
-int __sw::bind(uint16_t p) {
+int __socket_operations::bind(uint16_t p) {
   if (domain == AF_INET) {
     sockaddr_in addr{
         .sin_family = AF_INET, .sin_port = htons(p), .sin_addr{INADDR_ANY}};

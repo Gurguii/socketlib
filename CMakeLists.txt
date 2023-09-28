@@ -30,8 +30,11 @@ set(GSOCKET_POSIX_WRAPPED_FUNCTIONS
 set(GSOCKET_CLASS_SOCKET
   "src/socket.cpp"
 )
+set(GSOCKET_CLASS_PIPE
+	"src/classes/pipe/pipe.cpp"
+)
 set(GSOCKET_UTILS
-	"src/utils.cpp"
+	"src/utils/net.cpp"
 )
 set(GSOCKET_TEMPLATES
 	"templates/templates.cpp"
@@ -42,6 +45,7 @@ add_library(${PROJECT_NAME} SHARED
   "${GSOCKET_CONSTRUCTORS}"
   "${GSOCKET_POSIX_WRAPPED_FUNCTIONS}"
   "${GSOCKET_CLASS_SOCKET}"
+  "${GSOCKET_CLASS_PIPE}"
   "${GSOCKET_UTILS}"
   "${GSOCKET_TEMPLATES}"
 )
@@ -62,8 +66,10 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 # Install header files and other directories
-install(FILES src/enums.hh src/socket.hh src/utils.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/src/)
+install(FILES src/enums.hh src/socket.hh src/structs.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/src/)
 install(FILES src/core/socket_wrapper.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/src/core/)
+install(FILES src/utils/net.hpp src/utils/fd.hpp src/utils/socket.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/src/utils/)
+install(FILES src/classes/pipe/pipe.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/src/classes/pipe/)
 install(FILES templates/templates.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/templates/)
 install(FILES gsocket.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/)
 

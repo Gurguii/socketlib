@@ -1,12 +1,12 @@
 #include "../core/socket_wrapper.hh"
 namespace gsocket {
-int __sw::accept() {
+int __socket_operations::accept() {
   sockaddr addr;
   socklen_t addrlen = sizeof(addr);
   return ::accept(fd, &addr, &addrlen);
 }
 
-template <typename AddrStruct> int __sw::accept(AddrStruct &a) {
+template <typename AddrStruct> int __socket_operations::accept(AddrStruct &a) {
   sockaddr addr;
   socklen_t addrlen = sizeof(addr);
   uint8_t n = ::accept(fd, &addr, &addrlen);

@@ -1,5 +1,4 @@
-#ifndef GSOCKET_HH
-#define GSOCKET_HH
+#pragma once
 #include "core/socket_wrapper.hh"
 /* dup3 FLAGS:
   O_RDONLY: Opens the file for reading only.
@@ -18,8 +17,7 @@
   O_NOATIME: Prevents updating the file access time.
   O_TMPFILE: Creates a temporary file that is automatically deleted when closed.
 */
-class Socket : public gsocket::__sw {
-public:
+struct Socket : public gsocket::__socket_operations {
   Socket(Domain d, Type t, Behaviour b);
   Socket(uint8_t dom, uint8_t typ, uint8_t b);
   Socket(uint8_t fd);
@@ -28,4 +26,3 @@ public:
   Socket dup2(int newfd);
   Socket dup3(int newfd, int flags);
 };
-#endif
