@@ -1,0 +1,108 @@
+\doxysection{socket\+\_\+wrapper.\+hh}
+\hypertarget{socket__wrapper_8hh_source}{}\label{socket__wrapper_8hh_source}\index{/home/gurgui/github/socketlib/src/core/socket\_wrapper.hh@{/home/gurgui/github/socketlib/src/core/socket\_wrapper.hh}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <arpa/inet.h>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <cstring>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <ifaddrs.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <net/if.h>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <netdb.h>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <optional>}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <sys/ioctl.h>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <sys/poll.h>}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ <sys/socket.h>}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <unistd.h>}}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ "{}../enums.hh"{}}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ "{}../structs.hpp"{}}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ "{}../utils/fd.hpp"{}}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#include\ "{}../utils/socket.hpp"{}}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ "{}../utils/net.hpp"{}}}
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#define\ sockError\ strerror(errno)}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#define\ \_\_IO\_BUFFSIZE\ 4096}}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00025\ \textcolor{keyword}{namespace\ }gsocket\ \{}
+\DoxyCodeLine{00029\ \ \ \textcolor{keyword}{class\ }\mbox{\hyperlink{classgsocket_1_1____socket__operations}{\_\_socket\_operations}}\ \{}
+\DoxyCodeLine{00030\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00037\ \ \ \ \ \mbox{\hyperlink{classgsocket_1_1____socket__operations}{\_\_socket\_operations}}(Domain\ d,\ Type\ t,\ Behaviour\ b);}
+\DoxyCodeLine{00038\ \ \ \ \ }
+\DoxyCodeLine{00045\ \ \ \ \ \mbox{\hyperlink{classgsocket_1_1____socket__operations}{\_\_socket\_operations}}(uint8\_t\ domain,\ uint8\_t\ type,\ uint8\_t\ protocol);}
+\DoxyCodeLine{00046\ \ \ \ \ }
+\DoxyCodeLine{00051\ \ \ \ \ \mbox{\hyperlink{classgsocket_1_1____socket__operations}{\_\_socket\_operations}}(uint8\_t\ fd);}
+\DoxyCodeLine{00052\ \ \ \ \ }
+\DoxyCodeLine{00056\ \ \ \ \ \mbox{\hyperlink{classgsocket_1_1____socket__operations_aaa8645802e93e9e3de4578f71536a30f}{\string~\_\_socket\_operations}}();}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00058\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00059\ \ \ \ \ uint8\_t\ domain,\ type,\ fd;}
+\DoxyCodeLine{00060\ \ \ \ \ }
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a688e1fdc647d19fb794812c8c24c346e}{getFD}}();}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00071\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a494ff05b96e538078f777ec2bc8029cb}{close}}();}
+\DoxyCodeLine{00085\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__connect__overloads_ga8fb36393d5c7affc9b23882c6da85aff}{connect}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\&\ host,\ \textcolor{keywordtype}{int}\&\ port);}
+\DoxyCodeLine{00086\ }
+\DoxyCodeLine{00093\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__connect__overloads_ga8fb36393d5c7affc9b23882c6da85aff}{connect}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\&\&\ host,\ \textcolor{keywordtype}{int}\&\&\ port);}
+\DoxyCodeLine{00094\ }
+\DoxyCodeLine{00100\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__connect__overloads_ga8fb36393d5c7affc9b23882c6da85aff}{connect}}(addrinfo*\ \textcolor{keyword}{const}\ addr);}
+\DoxyCodeLine{00101\ }
+\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__connect__overloads_ga8fb36393d5c7affc9b23882c6da85aff}{connect}}(\mbox{\hyperlink{structgsocket_1_1addressInfo}{addressInfo}}*\ addr);}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00115\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__connect__overloads_ga8fb36393d5c7affc9b23882c6da85aff}{connect}}(sockaddr*\ addr,\ socklen\_t\&\ addrlen);}
+\DoxyCodeLine{00116\ }
+\DoxyCodeLine{00123\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__connect__overloads_ga8fb36393d5c7affc9b23882c6da85aff}{connect}}(std::string\_view\&\ host,\ uint16\_t\&\ port);}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00131\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00132\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__connect__overloads_ga88a597fd713aa7f55e3fd3b5cd03ec65}{connect}}(Args\&\&...\ args);}
+\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a61cd782ce216a2dd89eef55ceb4787bc}{send}}(std::string\_view\ data);}
+\DoxyCodeLine{00141\ }
+\DoxyCodeLine{00148\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a61cd782ce216a2dd89eef55ceb4787bc}{send}}(std::string\_view\ data,\ \textcolor{keywordtype}{int}\&\ bytes);}
+\DoxyCodeLine{00149\ }
+\DoxyCodeLine{00156\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a61cd782ce216a2dd89eef55ceb4787bc}{send}}(std::string\_view\ data,\ \textcolor{keywordtype}{int}\&\&\ bytes);}
+\DoxyCodeLine{00157\ }
+\DoxyCodeLine{00163\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a61cd782ce216a2dd89eef55ceb4787bc}{send}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\&\ data);}
+\DoxyCodeLine{00164\ }
+\DoxyCodeLine{00170\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a61cd782ce216a2dd89eef55ceb4787bc}{send}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\&\&\ data);}
+\DoxyCodeLine{00171\ }
+\DoxyCodeLine{00177\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a61cd782ce216a2dd89eef55ceb4787bc}{send}}(std::string\&\ data);}
+\DoxyCodeLine{00178\ }
+\DoxyCodeLine{00185\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00186\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a511cdc8467ed8236013e2fa50d68e3cd}{send}}(Args\&\&...\ args);}
+\DoxyCodeLine{00187\ }
+\DoxyCodeLine{00195\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_aa9de8e1390cb3c50648f5409c4b662d4}{sendto}}(std::string\_view\ host,\ uint16\_t\ port,\ std::string\_view\ msg);}
+\DoxyCodeLine{00196\ }
+\DoxyCodeLine{00203\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00204\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a29dc44e60479e0f22258dee7c0a0c90c}{sendto}}(Args\&\&...\ args);}
+\DoxyCodeLine{00205\ }
+\DoxyCodeLine{00210\ \ \ \ \ std::string\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a8a1879d36db35bd26eb36f30dcece929}{recv}}();}
+\DoxyCodeLine{00211\ }
+\DoxyCodeLine{00217\ \ \ \ \ std::string\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a8a1879d36db35bd26eb36f30dcece929}{recv}}(\textcolor{keywordtype}{int}\ bytes);}
+\DoxyCodeLine{00218\ }
+\DoxyCodeLine{00225\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a8a1879d36db35bd26eb36f30dcece929}{recv}}(\textcolor{keywordtype}{char}*\ buffer,\ \textcolor{keywordtype}{size\_t}\ bytes\_to\_read);}
+\DoxyCodeLine{00226\ }
+\DoxyCodeLine{00232\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a56f676a81773a4e324f7c1f23bf14f0e}{recvfrom}}(\mbox{\hyperlink{structmsgFrom}{msgFrom}}\&\ data);}
+\DoxyCodeLine{00233\ }
+\DoxyCodeLine{00240\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_ad38e40a073eec206817e4efcd55a85d6}{awaitData}}(std::string\&\ buffer,\ \textcolor{keywordtype}{int}\ timeout\ =\ -\/1);}
+\DoxyCodeLine{00241\ }
+\DoxyCodeLine{00248\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a272d9a2b4f3f15199fec23a767517245}{awaitDataFrom}}(\mbox{\hyperlink{structmsgFrom}{msgFrom}}\&\ \_\_sockHostData,\ \textcolor{keywordtype}{int}\ timeout);}
+\DoxyCodeLine{00249\ }
+\DoxyCodeLine{00256\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_adc2881929e8fe84f32ee5cd2001895aa}{bind}}(std::string\_view\ addr,\ uint16\_t\ port);}
+\DoxyCodeLine{00257\ }
+\DoxyCodeLine{00263\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_adc2881929e8fe84f32ee5cd2001895aa}{bind}}(uint16\_t\ port);}
+\DoxyCodeLine{00264\ }
+\DoxyCodeLine{00271\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00272\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_aee8ca682ecedf862f7c15e836d1b20a5}{bind}}(Args\&\&...\ args);}
+\DoxyCodeLine{00273\ }
+\DoxyCodeLine{00279\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a13095b1097812a78d363e3e64a2dedfe}{listen}}(\textcolor{keywordtype}{int}\ maxConns\ =\ 3);}
+\DoxyCodeLine{00280\ }
+\DoxyCodeLine{00285\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a0cd811e779bfa18351fba4fecc1f7333}{accept}}();}
+\DoxyCodeLine{00290\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ AddrStruct>\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a0cd811e779bfa18351fba4fecc1f7333}{accept}}(AddrStruct\ \&a);}
+\DoxyCodeLine{00295\ \ \ \ \ \mbox{\hyperlink{structAddr6}{Addr6}}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_a1024b82133c91b96005a608f1c0e4581}{getsockname}}();}
+\DoxyCodeLine{00300\ \ \ \ \ \mbox{\hyperlink{structAddr6}{Addr6}}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations_aa16f9737c106ee67e3737f0b72d7462e}{getpeername}}();}
+\DoxyCodeLine{00301\ \ \ \};}
+\DoxyCodeLine{00302\ \}}
+
+\end{DoxyCode}

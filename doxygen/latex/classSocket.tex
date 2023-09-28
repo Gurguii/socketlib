@@ -1,0 +1,123 @@
+\doxysection{Socket Class Reference}
+\hypertarget{classSocket}{}\label{classSocket}\index{Socket@{Socket}}
+Inheritance diagram for Socket\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classSocket}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classSocket_ac90cdeb5acd467b2503eb8f1886f30ce}\label{classSocket_ac90cdeb5acd467b2503eb8f1886f30ce} 
+{\bfseries Socket} (Domain d, Type t, Behaviour b)
+\item 
+\Hypertarget{classSocket_a0f6f3f0652b6ac88efd662dff4397f69}\label{classSocket_a0f6f3f0652b6ac88efd662dff4397f69} 
+{\bfseries Socket} (uint8\+\_\+t dom, uint8\+\_\+t typ, uint8\+\_\+t b)
+\item 
+\Hypertarget{classSocket_ad581060016f82e5cadf18b66b81d1e7d}\label{classSocket_ad581060016f82e5cadf18b66b81d1e7d} 
+{\bfseries Socket} (uint8\+\_\+t fd)
+\item 
+\Hypertarget{classSocket_a08790d2ed6cc4b63e43b250813eb803d}\label{classSocket_a08790d2ed6cc4b63e43b250813eb803d} 
+\mbox{\hyperlink{classSocket}{Socket}} {\bfseries dup} ()
+\item 
+\Hypertarget{classSocket_a5351628e6fe21d3aad4509fd907f7849}\label{classSocket_a5351628e6fe21d3aad4509fd907f7849} 
+\mbox{\hyperlink{classSocket}{Socket}} {\bfseries dup2} (int newfd)
+\item 
+\Hypertarget{classSocket_a32460daeecaf0bb6add5899b7c6e9660}\label{classSocket_a32460daeecaf0bb6add5899b7c6e9660} 
+\mbox{\hyperlink{classSocket}{Socket}} {\bfseries dup3} (int newfd, int flags)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \mbox{\hyperlink{classgsocket_1_1____sw}{gsocket\+::\+\_\+\+\_\+sw}}}
+\begin{DoxyCompactItemize}
+\item 
+const int \mbox{\hyperlink{classgsocket_1_1____sw_a0621481bcee87b0766c1fe5eb0c4f308}{get\+FD}} ()
+\begin{DoxyCompactList}\small\item\em Get the file descriptor of the socket. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_afa99c720a9cbcb68cc960b5d52e1c2e2}{close}} ()
+\begin{DoxyCompactList}\small\item\em Close the socket. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__connect__overloads_ga14e2d07da0ab112c63d8040e049efa62}{connect}} (const char \texorpdfstring{$\ast$}{*}\&host, int \&port)
+\begin{DoxyCompactList}\small\item\em Connect to a remote host. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__connect__overloads_ga73b76387e391b0bde197b63ad8f34a65}{connect}} (const char \texorpdfstring{$\ast$}{*}\&\&host, int \&\&port)
+\begin{DoxyCompactList}\small\item\em Move version of the connect function. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__connect__overloads_ga670ab78ce3449984d1561b07760cc7c0}{connect}} (addrinfo \texorpdfstring{$\ast$}{*}const addr)
+\begin{DoxyCompactList}\small\item\em Connect to a remote host using a given address. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__connect__overloads_ga4bf375f4defae87c0db70a89a08065ae}{connect}} (\mbox{\hyperlink{structaddressInfo}{address\+Info}} \texorpdfstring{$\ast$}{*}addr)
+\begin{DoxyCompactList}\small\item\em Connect to a remote host using a given address info. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__connect__overloads_ga9ebaecb3695e0d13122c90b67dc7ee36}{connect}} (sockaddr \texorpdfstring{$\ast$}{*}addr, socklen\+\_\+t \&addrlen)
+\begin{DoxyCompactList}\small\item\em Connect to a remote host using a given address and length. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__connect__overloads_ga0f170539352310041aac8edda11bc1a5}{connect}} (std\+::string\+\_\+view \&host, uint16\+\_\+t \&port)
+\begin{DoxyCompactList}\small\item\em Connect to a remote host using a given host and port. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename... Args$>$ }\\int \mbox{\hyperlink{group__connect__overloads_ga0707d15322ef6318fe36bf023095769b}{connect}} (Args \&\&... args)
+\begin{DoxyCompactList}\small\item\em Variadic template version of the connect function. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_aec8711c1ab9e9b19c917e185c066d4ef}{send}} (std\+::string\+\_\+view data)
+\begin{DoxyCompactList}\small\item\em Send data through the socket. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_a13ee321afe56c3dd5ba12bf027615d9b}{send}} (std\+::string\+\_\+view data, int \&bytes)
+\begin{DoxyCompactList}\small\item\em Send data through the socket and get the number of bytes sent. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_aa8a02eb4489bf0feaea7cd799c8cf39a}{send}} (std\+::string\+\_\+view data, int \&\&bytes)
+\begin{DoxyCompactList}\small\item\em Move version of the send function. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_aa091e68ee3f03a8c542e9f4ffb68fce6}{send}} (const char \texorpdfstring{$\ast$}{*}\&data)
+\begin{DoxyCompactList}\small\item\em Send data through the socket as a C-\/style string. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_a915296bfc7c685b78ce9c79c101177f8}{send}} (const char \texorpdfstring{$\ast$}{*}\&\&data)
+\begin{DoxyCompactList}\small\item\em Move version of the send function for C-\/style strings. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_ace57d4a6806888bdae6783e7572d0433}{send}} (std\+::string \&data)
+\begin{DoxyCompactList}\small\item\em Send data through the socket as a string. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename... Args$>$ }\\int \mbox{\hyperlink{classgsocket_1_1____sw_a3500fbaec87b44319284f92909f9d9d3}{send}} (Args \&\&... args)
+\begin{DoxyCompactList}\small\item\em Variadic template version of the send function. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_a05a9c7adc5cc1df9d9c5faedb8cb344d}{sendto}} (std\+::string\+\_\+view host, uint16\+\_\+t port, std\+::string\+\_\+view msg)
+\begin{DoxyCompactList}\small\item\em Send data to a specific host and port. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename... Args$>$ }\\int \mbox{\hyperlink{classgsocket_1_1____sw_addbe0eb5fead117d8e8e8ec27b691a5d}{sendto}} (Args \&\&... args)
+\begin{DoxyCompactList}\small\item\em Variadic template version of the sendto function. \end{DoxyCompactList}\item 
+std\+::string \mbox{\hyperlink{classgsocket_1_1____sw_ab3f7132d1bbd2d28685b86043e8d0858}{recv}} ()
+\begin{DoxyCompactList}\small\item\em Receive all available data from the socket. \end{DoxyCompactList}\item 
+std\+::string \mbox{\hyperlink{classgsocket_1_1____sw_a82e79a94c3949b24c52eea3e1c54f207}{recv}} (int bytes)
+\begin{DoxyCompactList}\small\item\em Receive a specified number of bytes from the socket. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_a80747a6823b625ed9cbb33f9de467026}{recv}} (char \texorpdfstring{$\ast$}{*}buffer, size\+\_\+t bytes\+\_\+to\+\_\+read)
+\begin{DoxyCompactList}\small\item\em Receive a specified number of bytes into a buffer. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_ae088c292d20bd83eedf70eacdfc79bf4}{recvfrom}} (\mbox{\hyperlink{structmsgFrom}{msg\+From}} \&data)
+\begin{DoxyCompactList}\small\item\em Receive data and populate the given \doxylink{structmsgFrom}{msg\+From} struct. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_ad24d361be1d1bd1662fd8b4062486ae5}{await\+Data}} (std\+::string \&buffer, int timeout=-\/1)
+\begin{DoxyCompactList}\small\item\em Wait for data in the socket for a specified timeout. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_ad1e2ab9ad7b9885604f3658a925bba8f}{await\+Data\+From}} (\mbox{\hyperlink{structmsgFrom}{msg\+From}} \&\+\_\+\+\_\+sock\+Host\+Data, int timeout)
+\begin{DoxyCompactList}\small\item\em Wait for data from a specific host for a specified timeout. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_af4f12b4d06e898ad399e925ac81ab3f2}{bind}} (std\+::string\+\_\+view addr, uint16\+\_\+t port)
+\begin{DoxyCompactList}\small\item\em Bind the socket to a specific address and port. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_a429ba2bf655892f8af6aa579060d972d}{bind}} (uint16\+\_\+t port)
+\begin{DoxyCompactList}\small\item\em Bind the socket to a specific port. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename... Args$>$ }\\int \mbox{\hyperlink{classgsocket_1_1____sw_a1f36c62fd481381ec26ffb889c8fd737}{bind}} (Args \&\&... args)
+\begin{DoxyCompactList}\small\item\em Variadic template version of the bind function. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_a4da3c915eb2dbaf7f90b3f53e3af4426}{listen}} (int max\+Conns=3)
+\begin{DoxyCompactList}\small\item\em Listen for incoming connections. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classgsocket_1_1____sw_a866f09c8a8ccebcced93e27ffca10c05}{accept}} ()
+\begin{DoxyCompactList}\small\item\em Accept an incoming connection. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename Addr\+Struct $>$ }\\int \mbox{\hyperlink{classgsocket_1_1____sw_aeecf142d8711e5b0178236d588b144e3}{accept}} (Addr\+Struct \&a)
+\begin{DoxyCompactList}\small\item\em Accept an incoming conection. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{structAddress}{Address}} \mbox{\hyperlink{classgsocket_1_1____sw_a399504e84311e3cae79110451acba4d5}{getsockname}} ()
+\begin{DoxyCompactList}\small\item\em Get socket host and port. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{structAddress}{Address}} \mbox{\hyperlink{classgsocket_1_1____sw_a24278005700f64e3be3cb30e66aea460}{getpeername}} ()
+\begin{DoxyCompactList}\small\item\em Get socket\textquotesingle{}s peer host and port. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Public Attributes inherited from \mbox{\hyperlink{classgsocket_1_1____sw}{gsocket\+::\+\_\+\+\_\+sw}}}
+\begin{DoxyCompactItemize}
+\item 
+uint8\+\_\+t {\bfseries domain}
+\item 
+uint8\+\_\+t {\bfseries type}
+\item 
+uint8\+\_\+t {\bfseries fd}
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions inherited from \mbox{\hyperlink{classgsocket_1_1____sw}{gsocket\+::\+\_\+\+\_\+sw}}}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classgsocket_1_1____sw_a777896dbd6284acf8dd2fcca369f97f7}{\+\_\+\+\_\+sw}} (Domain d, Type t, Behaviour b)
+\begin{DoxyCompactList}\small\item\em Constructor with domain, type, and behavior parameters. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classgsocket_1_1____sw_a0ec5201959a0385742c1ed9d16cdee5d}{\+\_\+\+\_\+sw}} (uint8\+\_\+t domain, uint8\+\_\+t type, uint8\+\_\+t protocol)
+\begin{DoxyCompactList}\small\item\em Constructor with domain, type, and protocol parameters. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classgsocket_1_1____sw_a068cfc1c45154f37eaa40449f3d1fa7b}{\+\_\+\+\_\+sw}} (uint8\+\_\+t fd)
+\begin{DoxyCompactList}\small\item\em Constructor with file descriptor parameter. \end{DoxyCompactList}\item 
+{\bfseries \texorpdfstring{$\sim$}{\string~}\+\_\+\+\_\+sw} ()
+\begin{DoxyCompactList}\small\item\em Destructor for the socket wrapper class. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/gurgui/github/socketlib/src/socket.\+hh\item 
+/home/gurgui/github/socketlib/src/socket.\+cpp\end{DoxyCompactItemize}

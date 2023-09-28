@@ -1,0 +1,34 @@
+\doxysection{socket.\+hh}
+\hypertarget{socket_8hh_source}{}\label{socket_8hh_source}\index{/home/gurgui/github/socketlib/src/socket.hh@{/home/gurgui/github/socketlib/src/socket.hh}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}core/socket\_wrapper.hh"{}}}
+\DoxyCodeLine{00003\ \textcolor{comment}{/*\ dup3\ FLAGS:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{\ \ O\_RDONLY:\ Opens\ the\ file\ for\ reading\ only.}}
+\DoxyCodeLine{00005\ \textcolor{comment}{\ \ O\_WRONLY:\ Opens\ the\ file\ for\ writing\ only.}}
+\DoxyCodeLine{00006\ \textcolor{comment}{\ \ O\_RDWR:\ Opens\ the\ file\ for\ both\ reading\ and\ writing.}}
+\DoxyCodeLine{00007\ \textcolor{comment}{\ \ O\_CREAT:\ Creates\ the\ file\ if\ it\ doesn't\ exist.}}
+\DoxyCodeLine{00008\ \textcolor{comment}{\ \ O\_EXCL:\ Used\ with\ O\_CREAT,\ ensures\ that\ open()\ fails\ if\ the\ file\ already\ exists.}}
+\DoxyCodeLine{00009\ \textcolor{comment}{\ \ O\_TRUNC:\ Truncates\ the\ file\ to\ zero\ length\ if\ it\ exists\ and\ is\ opened\ for\ writing.}}
+\DoxyCodeLine{00010\ \textcolor{comment}{\ \ O\_APPEND:\ Appends\ data\ to\ the\ end\ of\ the\ file\ instead\ of\ overwriting\ it.}}
+\DoxyCodeLine{00011\ \textcolor{comment}{\ \ O\_NONBLOCK:\ Sets\ the\ file\ descriptor\ to\ non-\/blocking\ mode.\ I/O\ operations\ return\ immediately\ if\ they\ can't\ be\ completed.}}
+\DoxyCodeLine{00012\ \textcolor{comment}{\ \ O\_SYNC:\ Writes\ are\ synchronized\ to\ the\ underlying\ storage\ device.}}
+\DoxyCodeLine{00013\ \textcolor{comment}{\ \ O\_DIRECTORY:\ Ensures\ that\ the\ opened\ file\ is\ a\ directory.}}
+\DoxyCodeLine{00014\ \textcolor{comment}{\ \ O\_NOFOLLOW:\ Prevents\ open()\ from\ following\ symbolic\ links.}}
+\DoxyCodeLine{00015\ \textcolor{comment}{\ \ O\_CLOEXEC:\ Closes\ the\ file\ descriptor\ automatically\ on\ exec\ calls.}}
+\DoxyCodeLine{00016\ \textcolor{comment}{\ \ O\_DIRECT:\ Bypasses\ the\ file\ system\ cache\ for\ I/O\ operations.}}
+\DoxyCodeLine{00017\ \textcolor{comment}{\ \ O\_NOATIME:\ Prevents\ updating\ the\ file\ access\ time.}}
+\DoxyCodeLine{00018\ \textcolor{comment}{\ \ O\_TMPFILE:\ Creates\ a\ temporary\ file\ that\ is\ automatically\ deleted\ when\ closed.}}
+\DoxyCodeLine{00019\ \textcolor{comment}{*/}}
+\DoxyCodeLine{00020\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocket}{Socket}}\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classgsocket_1_1____socket__operations}{gsocket::\_\_socket\_operations}}\ \{}
+\DoxyCodeLine{00021\ \ \ \mbox{\hyperlink{structSocket}{Socket}}(Domain\ d,\ Type\ t,\ Behaviour\ b);}
+\DoxyCodeLine{00022\ \ \ \mbox{\hyperlink{structSocket}{Socket}}(uint8\_t\ dom,\ uint8\_t\ typ,\ uint8\_t\ b);}
+\DoxyCodeLine{00023\ \ \ \mbox{\hyperlink{structSocket}{Socket}}(uint8\_t\ fd);}
+\DoxyCodeLine{00024\ \ \ \textcolor{comment}{/*\ returns\ duplicated\ \`{}Socket`'s\ file\ descriptor\ */}\ }
+\DoxyCodeLine{00025\ \ \ \mbox{\hyperlink{structSocket}{Socket}}\ dup();}
+\DoxyCodeLine{00026\ \ \ \mbox{\hyperlink{structSocket}{Socket}}\ dup2(\textcolor{keywordtype}{int}\ newfd);}
+\DoxyCodeLine{00027\ \ \ \mbox{\hyperlink{structSocket}{Socket}}\ dup3(\textcolor{keywordtype}{int}\ newfd,\ \textcolor{keywordtype}{int}\ flags);}
+\DoxyCodeLine{00028\ \};}
+
+\end{DoxyCode}

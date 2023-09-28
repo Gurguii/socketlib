@@ -1,0 +1,34 @@
+\doxysection{enums.\+hh}
+\hypertarget{enums_8hh_source}{}\label{enums_8hh_source}\index{/home/gurgui/github/socketlib/src/enums.hh@{/home/gurgui/github/socketlib/src/enums.hh}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <sys/socket.h>}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00005\ \textcolor{keyword}{enum\ class}\ Type\ :\ uint8\_t\ \{}
+\DoxyCodeLine{00006\ \ \ tcp\ =\ 1,}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#define\ tcp\_sock\ Type::tcp}}
+\DoxyCodeLine{00008\ \ \ udp\ =\ 2}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ udp\_sock\ Type::udp}}
+\DoxyCodeLine{00010\ \};}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \textcolor{keyword}{enum\ class}\ Domain\ :\ uint8\_t\ \{}
+\DoxyCodeLine{00013\ \ \ local\ =\ 0,}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#define\ local\_sock\ Domain::local}}
+\DoxyCodeLine{00015\ \ \ ipv4\ =\ 2,}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#define\ ipv4\ Domain::ipv4}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#define\ ipv4\_sock\ Domain::ipv4}}
+\DoxyCodeLine{00018\ \ \ ipv6\ =\ 10}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#define\ ipv6\ Domain::ipv6}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#define\ ipv6\_sock\ Domain::ipv6}}
+\DoxyCodeLine{00021\ \};}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \textcolor{keyword}{enum\ class}\ Behaviour\ :\ uint8\_t\ \{}
+\DoxyCodeLine{00024\ \ \ noblock\ =\ 0,}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#define\ noblock\_sock\ Behaviour::noblock}}
+\DoxyCodeLine{00026\ \ \ block\ =\ 1}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#define\ block\_sock\ Behaviour::block}}
+\DoxyCodeLine{00028\ \};}
+
+\end{DoxyCode}

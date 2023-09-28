@@ -1,0 +1,37 @@
+\doxysection{pipe.\+hpp}
+\hypertarget{pipe_8hpp_source}{}\label{pipe_8hpp_source}\index{/home/gurgui/github/socketlib/src/classes/pipe/pipe.hpp@{/home/gurgui/github/socketlib/src/classes/pipe/pipe.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ CPP\ HEADERS}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <string\_view>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{comment}{//\ C\ HEADERS}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <unistd.h>}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{comment}{//\ CUSTOM\ HEADERS}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ "{}../../utils/fd.hpp"{}}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{namespace\ }gsocket}
+\DoxyCodeLine{00015\ \{}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00020\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classgsocket_1_1Pipe}{Pipe}}}
+\DoxyCodeLine{00021\ \{}
+\DoxyCodeLine{00022\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{int}\ reader;}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keywordtype}{int}\ writer;}
+\DoxyCodeLine{00025\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00026\ \ \ \ \ \mbox{\hyperlink{classgsocket_1_1Pipe}{Pipe}}();}
+\DoxyCodeLine{00027\ \ \ \ \ \mbox{\hyperlink{classgsocket_1_1Pipe}{\string~Pipe}}();}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{int}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classgsocket_1_1Pipe_ab8fdd696406f7e8ea02235fe8120b68e}{GetReader}}();}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordtype}{int}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classgsocket_1_1Pipe_a16e01d4470e646e4e33857ddba04f19c}{GetWriter}}();}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1Pipe_a4f77c36bda5fc5d4e6a45334f4f3dede}{write}}(std::string\_view\ data);}
+\DoxyCodeLine{00047\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1Pipe_a0c0b9106a768eb98fa85a358e049463c}{read}}(std::string\ \&buffer);}
+\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classgsocket_1_1Pipe_a19e9081c8857edd7967381991364ddb0}{available2read}}();}
+\DoxyCodeLine{00052\ \ \ \};}
+\DoxyCodeLine{00053\ \}}
+
+\end{DoxyCode}

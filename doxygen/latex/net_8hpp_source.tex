@@ -1,0 +1,45 @@
+\doxysection{net.\+hpp}
+\hypertarget{net_8hpp_source}{}\label{net_8hpp_source}\index{/home/gurgui/github/socketlib/src/utils/net.hpp@{/home/gurgui/github/socketlib/src/utils/net.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <ifaddrs.h>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <cstring>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <arpa/inet.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <netdb.h>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <net/if.h>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ "{}../enums.hh"{}}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{keyword}{namespace\ }gsocket}
+\DoxyCodeLine{00011\ \{}
+\DoxyCodeLine{00018\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structgsocket_1_1socketPreferences}{socketPreferences}}\ \{}
+\DoxyCodeLine{00019\ \ \ \textcolor{keywordtype}{int}\ flags;}
+\DoxyCodeLine{00020\ \ \ Domain\ domain;}
+\DoxyCodeLine{00021\ \ \ Type\ type;}
+\DoxyCodeLine{00022\ \ \ \textcolor{keywordtype}{int}\ protocol;}
+\DoxyCodeLine{00023\ \};}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00029\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structgsocket_1_1addressInfo}{addressInfo}}\ \{}
+\DoxyCodeLine{00030\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00031\ \ \ addrinfo*\ head;}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00034\ \ \ \mbox{\hyperlink{structgsocket_1_1addressInfo}{addressInfo}}(addrinfo*\ addrs)\ :\ head(addrs)\ \{\}}
+\DoxyCodeLine{00035\ \ \ addrinfo*\ get()\ \{\ \textcolor{keywordflow}{return}\ head;\ \};}
+\DoxyCodeLine{00036\ \ \ \mbox{\hyperlink{structgsocket_1_1addressInfo}{\string~addressInfo}}()\ \{}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{comment}{/*\ free\ addrinfo\ memory\ when\ object\ goes\ out\ of\ scope\ */}}
+\DoxyCodeLine{00038\ \ \ \ \ freeaddrinfo(head);}
+\DoxyCodeLine{00039\ \ \ \}}
+\DoxyCodeLine{00040\ \};}
+\DoxyCodeLine{00048\ std::string\ getIpByIface(std::string\_view\ ifa,\ Domain\&\&\ t);}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00056\ \textcolor{keywordtype}{int}\ getIdByIp(std::string\_view\ addr);}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00065\ \mbox{\hyperlink{structgsocket_1_1addressInfo}{addressInfo}}\ getaddrinfo(std::string\_view\ domain,\ std::string\_view\ service,\ \mbox{\hyperlink{structgsocket_1_1socketPreferences}{socketPreferences}}\&\ hints);}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00072\ std::pair<std::string,\ std::string>\ getnameinfo(\mbox{\hyperlink{structgsocket_1_1addressInfo}{addressInfo}}\&\ addr);}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00074\ \}}
+
+\end{DoxyCode}
