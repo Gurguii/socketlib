@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <net/if.h>
-#include "../enums.hh"
+#include "../enums.hpp"
 
 namespace gsocket
 {
@@ -40,7 +40,7 @@ public:
 };
 /**
  * @brief Returns a std::string representing the IP of the given interface.
- *        E.g getIpByIface("eth0") -> 192.168.1.20
+ *        E.g getIpByIface("eth0",ipv4) -> 192.168.1.20
  * @param ifa The interface name.
  * @param t The domain (IPv4 or IPv6).
  * @return The IP address as a std::string.

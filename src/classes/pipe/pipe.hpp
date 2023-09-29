@@ -36,6 +36,30 @@ class Pipe
      */
     int const GetWriter();
     /**
+     * Closes the reader.
+     *
+     * This function closes the reader associated with the pipe.
+     *
+     * @return 0 on success, -1 on error.
+     */
+    int closeReader();
+    /**
+     * Closes the writer.
+     *
+     * This function closes the writer associated with the pipe.
+     *
+     * @return 0 on success, -1 on error.
+     */
+    int closeWriter();
+    /**
+     * Closes the pipe.
+     *
+     * This function closes the pipe.
+     *
+     * @return 0 on success, -1 on error.
+     */
+    int close();
+    /**
     * @brief write data to the pipe
     * @return amount of bytes written
     */

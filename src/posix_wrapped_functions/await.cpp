@@ -1,4 +1,4 @@
-#include "../core/socket_wrapper.hh"
+#include "../core/socket_wrapper.hpp"
 #include <cstdint>
 constexpr uint16_t __TIMEOUT_MULTIPLIER = 1000;
 namespace gsocket {

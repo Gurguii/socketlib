@@ -1,4 +1,4 @@
-#include "../core/socket_wrapper.hh"
+#include "../core/socket_wrapper.hpp"
 #include <sys/socket.h>
 namespace gsocket {
 std::string __socket_operations::recv() {

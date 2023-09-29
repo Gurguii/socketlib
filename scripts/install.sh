@@ -4,9 +4,9 @@
 function runcommand(){
 	$1 &>/dev/null
 	if [[ $? -eq 0 ]]; then 
-		printf "%s [GOOD]\n" "$2" | tee -a "$log_file"
+		printf "[GOOD] %s\n" "$2" | tee -a "$log_file"
 	else 
-		printf "%s [FAIL]\n" "$2" | tee -a "$log_file"
+		printf "[FAIL] %s\n" "$2" | tee -a "$log_file"
 		exit 1
 	fi
 }

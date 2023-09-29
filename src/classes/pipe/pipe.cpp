@@ -18,6 +18,15 @@ namespace gsocket
   int const Pipe::GetWriter(){
     return writer;
   }
+  int Pipe::closeWriter(){
+    return ::close(writer);
+  }
+  int Pipe::closeReader(){
+    return ::close(reader);
+  }
+  int Pipe::close(){
+    return (::close(writer) || ::close(reader) ? -1 : 0);
+  }
   int Pipe::write(std::string_view data)
   {
     return ::write(writer,data.data(),data.size());

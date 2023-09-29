@@ -1,4 +1,4 @@
-#include "../core/socket_wrapper.hh"
+#include "../core/socket_wrapper.hpp"
 namespace gsocket {
 int __socket_operations::connect(const char *&h, int &p) {
   if (domain == AF_INET) {

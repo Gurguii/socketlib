@@ -8,7 +8,7 @@ namespace gsocket
  * @param fd The file descriptor of the file_descriptor.
  * @return The number of available bytes.
  */
-constexpr auto availableBytes = [](int fd, int *n) {
+inline constexpr auto availableBytes = [](int fd, int *n) {
   ioctl(fd, FIONREAD, n);
 };
 }

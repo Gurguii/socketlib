@@ -1,4 +1,4 @@
-#include "../core/socket_wrapper.hh"
+#include "../core/socket_wrapper.hpp"
 
 namespace gsocket {
 Addr6 __socket_operations::getpeername() {

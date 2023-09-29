@@ -6,44 +6,43 @@ function delete(){
 	for i in "$@"; do
 		rm -rf $i
 		if [[ $? -eq 0 ]]; then
-			printf "Removing "$i" [OK]\n" | tee -a "$log_file"
+			printf "[OK] Removing "$i"\n" | tee -a "$log_file"
 		else
-			printf "Removing "$i" [FAILED]\n" | tee -a "$log_file"
+			printf "[FAILED] Removing "$i"\n" | tee -a "$log_file"
 			exit 1
 		fi
 	done
 }
 # Check for sudo privileges (required to avoid permission problems)
-if [[ $EUID != 0 ]]; then
+if (( $EUID != 0 )); then
 	printf "[!] - Need sudo privileges!\n"
 	exit 1
 fi
 
 # Holds scripts' absolute path
 script_dir=$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-installpathsfile="$script_dir/.installpaths"
+
+installmanifest="$script_dir/../build/install_manifest.txt"
+builddir="$script_dir/../build"
 log_file="$script_dir/logs/uninstall.log"
 
 # Check that .installpaths file exists
-if ! [[ -e "$installpathsfile" ]]; then
-	printf "Can't find '%s', exiting...\n" "$installpathsfile"
+if ! [[ -e "$installmanifest" ]]; then
+	printf "Can't find '%s', exiting...\n" "$installmanifest"
 	exit 1
 fi
 
 printf "[+] Starting gsocket removal - %s\n" "$(date '+%D@%R')" | tee -a "$log_file"
 
-# Include .installpaths (contains absolute paths of installed files)
-source "$installpathsfile"
-
-if [[ -z $libdir || -z $includedir || -z $builddir ]]; then
-	printf "missing some path in $installpathsfile\n"
+if [[ -z "$installmanifest" || -z "$builddir" ]]; then
+	printf "missing build/manifest_install.txt build directory itself\n"
 	exit 1
 fi
 
-# Delete call to remove everything installed
-for path in ${libdir[@]}; do
+# Delete file installed by CMakeLists.txt
+while read path; do
 	delete "$path"
-done
-delete "$includedir"
+done < "$installmanifest"
+
+# Delete build dir
 delete "$builddir"
-delete "$installpathsfile"

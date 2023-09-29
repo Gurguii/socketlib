@@ -1,11 +1,12 @@
 #include "net.hpp"
+#include <thread>
 namespace gsocket
 {
 
-std::string getIpByIface(std::string_view ifa, Domain &&t = ipv4) {
+std::string getIpByIface(std::string_view ifa, Domain &&t = g_ipv4) {
   ifaddrs *addrs = nullptr;
   getifaddrs(&addrs);
-  std::string iface((t == ipv4 ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN), '\x00');
+  std::string iface((t == g_ipv4 ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN), '\x00');
   for (auto a = addrs; a != nullptr; a = a->ifa_next) {
     if (a->ifa_addr->sa_family == static_cast<int>(t)) {
       if (strcmp(ifa.data(), a->ifa_name)) {
@@ -76,7 +77,7 @@ std::pair<std::string, std::string> getnameinfo(addressInfo &addr) {
 template <typename T> std::pair<T, T> getsocketpair(Type t, Behaviour b) {
   std::pair<int, int> fds;
   ::socketpair(AF_LOCAL,
-               (b == block_sock ? static_cast<int>(t)
+               (b == g_block ? static_cast<int>(t)
                            : (static_cast<int>(t) | SOCK_NONBLOCK)),
                0, &fds.first);
   return fds;

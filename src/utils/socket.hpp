@@ -1,5 +1,5 @@
 #pragma once
-#include "../enums.hh"
+#include "../enums.hpp"
 #include <utility>
 
 namespace gsocket{

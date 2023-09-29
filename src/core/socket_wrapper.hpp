@@ -12,8 +12,11 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
-#include "../enums.hh"
+// TESTING
+#include <future>
+#include <thread>
+// TESTING
+#include "../enums.hpp"
 #include "../structs.hpp"
 #include "../utils/fd.hpp"
 #include "../utils/socket.hpp"
@@ -62,7 +65,7 @@ namespace gsocket {
      * @brief Get the file descriptor of the socket.
      * @return The file descriptor.
      */
-    const int getFD();
+    int const getFD();
 
     /**
      * @brief Close the socket.
@@ -75,7 +78,12 @@ namespace gsocket {
      *
      * @addtogroup connect_overloads
      * @{ */
-
+  //TESTING
+  std::future<std::string> connectAsync(const char *host, int port)
+  {
+    auto a = std::async(std::launch::async,gsocket::getIpByIface,"vbr0",Domain::ipv4);
+    return a;
+  }
     /**
      * @brief Connect to a remote host.
      * @param host The host to connect to.
@@ -128,10 +136,16 @@ namespace gsocket {
      * @param args The arguments.
      * @return 0 on success, -1 on failure.
      */
-    template <typename... Args>
-    int connect(Args&&... args);
+    //template <typename... Args>
+    //int connect(Args&&... args);
     /**@}*/
-
+    
+    /**
+     * @defgroup connect_overloads
+     * @brief overloads of the POSIX connect() function
+     *
+     * @addtogroup connect_overloads
+     * @{ */
     /**
      * @brief Send data through the socket.
      * @param data The data to send.
@@ -184,7 +198,14 @@ namespace gsocket {
      */
     template <typename... Args>
     int send(Args&&... args);
-
+    /**@}*/
+    
+    /**
+     * @defgroup connect_overloads
+     * @brief overloads of the POSIX connect() function
+     *
+     * @addtogroup connect_overloads
+     * @{ */
     /**
      * @brief Send data to a specific host and port.
      * @param host The host to send data to.
@@ -202,7 +223,14 @@ namespace gsocket {
      */
     template <typename... Args>
     int sendto(Args&&... args);
-
+    /**@}*/
+    
+    /**
+     * @defgroup connect_overloads
+     * @brief overloads of the POSIX connect() function
+     *
+     * @addtogroup connect_overloads
+     * @{ */
     /**
      * @brief Receive all available data from the socket.
      * @return The received data as a string.
@@ -223,6 +251,7 @@ namespace gsocket {
      * @return The number of bytes received, or -1 on failure.
      */
     int recv(char* buffer, size_t bytes_to_read);
+    /**@}*/
 
     /**
      * @brief Receive data and populate the given msgFrom struct.

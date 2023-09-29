@@ -1,5 +1,5 @@
 #pragma once 
-#include "../src/socket.hh"
+#include "../src/socket.hpp"
 /**
  * @brief Connects the gsocketClass object to the specified address and port.
  * 

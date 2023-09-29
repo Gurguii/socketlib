@@ -1,4 +1,4 @@
-#include "templates.hh"
+#include "templates.hpp"
 namespace gsocket::templates {
 template <class gsocketClass>
 // CONNECT
