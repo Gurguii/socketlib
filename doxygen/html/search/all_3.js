@@ -1,6 +1,0 @@
-var searchData=
-[
-  ['close_0',['close',['../classgsocket_1_1____socket__operations.html#a494ff05b96e538078f777ec2bc8029cb',1,'gsocket::__socket_operations']]],
-  ['connect_1',['connect',['../group__connect__overloads.html#ga8fb36393d5c7affc9b23882c6da85aff',1,'gsocket::__socket_operations::connect(const char *&amp;host, int &amp;port)'],['../group__connect__overloads.html#ga4f2dd94312d1557c2cb29d898a093546',1,'gsocket::__socket_operations::connect(const char *&amp;&amp;host, int &amp;&amp;port)'],['../group__connect__overloads.html#ga0e0fa456cbbb2733c0c2f9692d905ba2',1,'gsocket::__socket_operations::connect(addrinfo *const addr)'],['../group__connect__overloads.html#ga74330da9dcf484b0013f6f619c63a599',1,'gsocket::__socket_operations::connect(addressInfo *addr)'],['../group__connect__overloads.html#gac08795f31c7e5bac432d2dbe0e2a2e90',1,'gsocket::__socket_operations::connect(sockaddr *addr, socklen_t &amp;addrlen)'],['../group__connect__overloads.html#ga5b2dfbc2c0f60b951141d0398c452581',1,'gsocket::__socket_operations::connect(std::string_view &amp;host, uint16_t &amp;port)'],['../group__connect__overloads.html#ga88a597fd713aa7f55e3fd3b5cd03ec65',1,'gsocket::__socket_operations::connect(Args &amp;&amp;... args)']]],
-  ['connect_5foverloads_2',['Connect_overloads',['../group__connect__overloads.html',1,'']]]
-];
