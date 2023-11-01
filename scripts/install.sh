@@ -4,11 +4,26 @@
 function runcommand(){
 	$1 &>/dev/null
 	if [[ $? -eq 0 ]]; then 
-		printf "[GOOD] %s\n" "$2" | tee -a "$log_file"
+		printgreen "[OK] "; printf "%s\n" "$2" | tee -a "$log_file"
 	else 
-		printf "[FAIL] %s\n" "$2" | tee -a "$log_file"
+		printred "[FAIL] "; printf "%s\n" "$2" | tee -a "$log_file"
 		exit 1
 	fi
+}
+
+function printred()
+{
+  printf "\e[91m$@\e[0m"
+}
+
+function printgreen()
+{
+  printf "\e[92m$@\e[0m"
+}
+
+function printcyan()
+{
+  printf "\e[36m$@\e[0m"
 }
 
 if [[ $EUID != 0 ]]; then
@@ -21,7 +36,7 @@ script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Debug file path(will have output in case debugging of installation failing is required/desired)
 log_file="$script_dir/logs/install.log"
-echo "[+] Starting gsocket installation - $(date '+%D@%R')" | tee -a "$log_file" 
+printcyan "[+] Starting gsocket installation - $(date '+%D@%R')\n" | tee -a "$log_file" 
 
 # Get a valid package manager for current system
 declare -A packagemanagers
@@ -81,4 +96,4 @@ if ! ldconfig -p | grep "libgsocket" &>/dev/null; then
 	fi
 fi
 
-printf "[+] - Done, gsocket successfully installed!\n\n" | tee -a "$log_file"
+printcyan "[+] - Done, gsocket successfully installed!\n\n" | tee -a "$log_file"

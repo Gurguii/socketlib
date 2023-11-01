@@ -1,57 +1,85 @@
 #pragma once
+#include <arpa/inet.h>
 #include <string>
-#include <cstdint>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <vector>
+#include <variant>
+#include "enums.hpp"
+#include "utils/dnsflags.hpp"
 
-/**
- * @defgroup structs Structures
- * This group contains the following structures:
- *
- * - Addr4
- * - Addr6
- * - msgFrom
- *
- * @{
- */
 
-/**
- * @struct Addr4
- * Structure used to store an IPv4 IP and port.
- *
- * @members
- *   host: The IPv4 IP address, as a string.
- *   port: The port number, as an unsigned 16-bit integer.
- */
-struct Addr4 {
-  std::string host = std::string(16, '\x00');
+
+namespace gsocket
+{
+
+struct File{
+  const char *path;
+};
+
+struct addr4
+{
+  uint32_t addr;
   uint16_t port;
+  [[nodiscard("returning std::string not being used")]] char* host(){
+    return inet_ntoa(in_addr{addr});
+  }
 };
 
-/**
- * @struct Addr6
- * Structure used to store an IPv4/IPv6 IP and port.
- *
- * @members
- *   host: The IPv4/IPv6 IP address, as a string.
- *   port: The port number, as an unsigned 16-bit integer.
- */
-struct Addr6 {
-  std::string host = std::string(46, '\x00');
+struct addr6
+{
+  in6_addr addr;
   uint16_t port;
+  // TODO - implement
+  [[nodiscard("ignoring returned std::string")]] std::string host(){
+    return nullptr;
+  }
 };
 
-/**
- * @struct msgFrom
- * Structure used in some functions (such as readfrom()) as a parameter/return value.
- * Contains `struct Address` with host-port and std::string which holds the received msg.
- *
- * @members
- *   addr: The address of the sender, as an Addr6 structure.
- *   msg: The message received, as a string.
- */
-struct msgFrom {
-  Addr6 addr;
-  std::string msg;
+//struct addr{
+//  private:
+//  std::variant<gsocket::addr4,gsocket::addr6> __addr;
+//  public:
+//  char* host;
+//  uint16_t port;
+//}
+using addr = std::variant<gsocket::addr4,gsocket::addr6>;
+
+struct NetworkInterface 
+{
+  std::string ip4 = std::string(INET_ADDRSTRLEN,'\x00');
+  std::string ip6 = std::string(INET6_ADDRSTRLEN, '\x00');
+  // TODO - implement this
+  uint32_t _ip4;
+  uint8_t _ip6[16];
 };
+struct SocketPreferences {
+  DNS_FLAGS flags;
+  SOCKET_DOMAIN domain;
+  SOCKET_TYPE type;
+  int protocol;
+};
+struct SocketInfo
+{
+  SOCKET_TYPE type;
+  SOCKET_DOMAIN domain;
+};
+//dnsLookupResult
+struct DNSlookupResult
+{
+public:
+  std::string host = std::string(46,'\x00');
+  std::string service = std::string(10,'\x00');
+  uint16_t port;
 
-/** @} */ // end of structs group
+  addrinfo *addrs = nullptr;
+  std::vector<SocketInfo> results;
 
+  ~DNSlookupResult(){
+    /* free resources */
+    if(addrs != nullptr){
+      ::freeaddrinfo(addrs);
+    }
+  };
+}; 
+}

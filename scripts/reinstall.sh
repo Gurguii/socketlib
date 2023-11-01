@@ -4,6 +4,7 @@ script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 if [[ $EUID != 0 ]]; then
 	echo "[!] - Need sudo privileges!"
+	exit 0
 fi
 
 installscript="$script_dir"/install.sh
