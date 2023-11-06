@@ -8,5 +8,7 @@ namespace gsocket
   {
   public:
     udp4socket(BEHAVIOUR behaviour = BEHAVIOUR::noblock);
+    // IMPLEMENT
+    int recvfrom(addr4 &addrbuff);
   };
 }

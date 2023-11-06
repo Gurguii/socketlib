@@ -36,7 +36,7 @@ script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Debug file path(will have output in case debugging of installation failing is required/desired)
 log_file="$script_dir/logs/install.log"
-printcyan "[+] Starting gsocket installation - $(date '+%D@%R')\n" | tee -a "$log_file" 
+printcyan "[+] Starting gsocket installation - $(date '+%d-%m-%Y at %H:%M')\n" | tee -a "$log_file" 
 
 # Get a valid package manager for current system
 declare -A packagemanagers

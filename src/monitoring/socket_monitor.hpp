@@ -29,7 +29,7 @@ namespace gsocket::monitoring
     int _epoll;
     uint64_t managed_descriptors = 0;
   public:
-    std::vector<epoll_event> available_events{10};
+    std::vector<epoll_event> available_events{};
 
     SocketMonitor();
     // TODO - implement

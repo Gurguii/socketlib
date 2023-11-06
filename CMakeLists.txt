@@ -29,6 +29,10 @@ set(gsocket_socket_classes
   "src/pipe/namedpipe.cpp"
 )
 
+set(gsocket_testing
+  "testing/bufferclass.cpp"
+)
+
 add_library(${PROJECT_NAME} SHARED
   "${gsocket_core}"
   "${gsocket_socket_classes}"
@@ -55,5 +59,6 @@ install(DIRECTORY src/
   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
 )
 
+install(FILES ${gsocket_testing} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/testing)
 install(FILES gsocket.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
 file(WRITE ${CMAKE_BINARY_DIR}/gsocket_root_include_dir.txt "gsocket_root_include_dir=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}\n")

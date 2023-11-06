@@ -3,9 +3,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include <future>
-#include <thread>
-#include <any>
 
 #include "../../utils/net.hpp"
 #include "../../core/__base_socket.hpp"

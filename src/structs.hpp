@@ -36,29 +36,25 @@ struct addr6
   }
 };
 
-//struct addr{
-//  private:
-//  std::variant<gsocket::addr4,gsocket::addr6> __addr;
-//  public:
-//  char* host;
-//  uint16_t port;
-//}
 using addr = std::variant<gsocket::addr4,gsocket::addr6>;
 
 struct NetworkInterface 
 {
   std::string ip4 = std::string(INET_ADDRSTRLEN,'\x00');
   std::string ip6 = std::string(INET6_ADDRSTRLEN, '\x00');
-  // TODO - implement this
+  // TODO - implement this - store the ips in these 2 ints 
+  // and use functions to convert and get char*
   uint32_t _ip4;
   uint8_t _ip6[16];
 };
+
 struct SocketPreferences {
   DNS_FLAGS flags;
   SOCKET_DOMAIN domain;
   SOCKET_TYPE type;
   int protocol;
 };
+
 struct SocketInfo
 {
   SOCKET_TYPE type;

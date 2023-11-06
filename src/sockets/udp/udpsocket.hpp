@@ -12,5 +12,7 @@ namespace gsocket
     int connect(std::string_view addr, uint16_t port);
     int sendto(std::string_view addr, uint16_t port, std::string_view data);
     int bind(std::string_view addr, uint16_t port, int max_conns = 3);
+    // IMPLEMENT
+    int recvfrom(addr &addrbuff);
   };
 }

@@ -1,7 +1,9 @@
 #include "../__base_socket.hpp"
+#include "../../../testing/bufferclass.cpp"
 
 namespace gsocket
 {
+ 
  int __base_socket::send(std::string_view data){
   return ::send(_fd,data.data(),data.size(),0);
  }
@@ -14,16 +16,11 @@ namespace gsocket
   fseek(file,0,SEEK_END);
   uint64_t size = ftell(file);
   fseek(file,0,SEEK_SET);
-  uint8_t *buffer = (uint8_t*)malloc(size);
-  if(buffer == nullptr){
-   return -1;
-  }
-  if(fread(buffer,size,1,file) <= 0){
+  testing::Buffer buffer(size);
+  if(fread(buffer.beg(),size,1,file) <= 0){
    return -1;
   };
-  int sbytes = ::send(_fd,buffer,size,0); 
-  free(buffer);
-  buffer = nullptr;
+  int sbytes = ::send(_fd,buffer.beg(),size,0); 
   return sbytes;
  }
 

@@ -59,7 +59,7 @@ if ! [[ -e "$installmanifest" ]]; then
 	exit 1
 fi
 
-printcyan "[+] Starting gsocket removal - $(date '+%D@%R')\n" | tee -a "$log_file"
+printcyan "[+] Starting gsocket removal - $(date '+%d-%m-%Y at %H:%M')\n" | tee -a "$log_file"
 
 if [[ -z "$installmanifest" || -z "$builddir" ]]; then
 	printf "missing build/manifest_install.txt build directory itself\n"
