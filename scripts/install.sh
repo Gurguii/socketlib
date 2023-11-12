@@ -89,10 +89,11 @@ runcommand "make install" "Running 'make install' - installing library in the sy
 runcommand "ldconfig" "Running 'ldconfig' - refresh system includes " 
 
 if ! ldconfig -p | grep "libgsocket" &>/dev/null; then
-	read -rp "WARNING libgsocket not detected in `ldconfig -v` what means the library won't be detected during runtime, try to fix? y/n " ans
+	printred "WARNING"
+	read -rp " libgsocket not detected in 'ldconfig -v' what means the library won't be detected during runtime, fix? y/n " ans
 	if [[ ${ans,,} == "y" || ${ans,,} == "yes" ]]; then
-		runcommand "printf "/usr/local/lib" > /etc/ld.so.conf.d/gsocket.conf" "Adding '/usr/local/lib' to /etc/ld.so.conf.d/gsocket.conf"
-		runcommand "ldconfig" "Running 'ldconfig' - refresh system includes" 
+		printf "/usr/local/lib" > "/etc/ld.so.conf.d/gsocket.conf"
+		runcommand "ldconfig" "Running 'ldconfig' - refreshing system includes" 
 	fi
 fi
 
