@@ -92,7 +92,8 @@ if ! ldconfig -p | grep "libgsocket" &>/dev/null; then
 	printred "WARNING"
 	read -rp " libgsocket not detected in 'ldconfig -v' what means the library won't be detected during runtime, fix? y/n " ans
 	if [[ ${ans,,} == "y" || ${ans,,} == "yes" ]]; then
-		printf "/usr/local/lib" > "/etc/ld.so.conf.d/gsocket.conf"
+		printf "/usr/local/lib/gsocket" > "/etc/ld.so.conf.d/gsocket.conf"
+		printf "\n/etc/ld.so.conf.d/gsocket.conf\n" >> "$script_dir/../build/install_manifest.txt"
 		runcommand "ldconfig" "Running 'ldconfig' - refreshing system includes" 
 	fi
 fi

@@ -5,14 +5,16 @@
 #include <new>
 
 #define __BUFFSIZE (4 * 1024 * 1024) // 4Mb
+using ui8 = uint8_t;
+
 namespace gsocket::testing
 {
 class Buffer{
   private:
-    uint8_t *ptr;
+    ui8 *ptr;
   public:
     uint64_t size;
-    Buffer(uint64_t size = __BUFFSIZE, uint8_t filler = 0):ptr((uint8_t*)malloc(size)),size(size){
+    Buffer(uint64_t size = __BUFFSIZE, ui8 filler = 0):ptr((uint8_t*)malloc(size)),size(size){
       if(ptr == NULL){
         throw std::bad_alloc(); 
       }
@@ -22,16 +24,16 @@ class Buffer{
      free(ptr);
      ptr = NULL;
     }
-    uint8_t* const beg(){
+    ui8* const beg(){
      return ptr;
     }
-    uint8_t* const end(){
+    ui8* const end(){
      return ptr+size;
     }
-    uint8_t const at(uint64_t index){
+    ui8 const at(uint64_t index){
       return *(ptr+index);
     }
-    uint8_t* const from(uint64_t index){
+    ui8* const from(uint64_t index){
       return ptr+index;
     }
   };
