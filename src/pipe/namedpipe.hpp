@@ -15,8 +15,8 @@ namespace gsocket
   private:
     std::string path;
     int fd;
+    static std::string generate_uuid();
   public:
-    std::string generate_uuid();
     NamedPipe();
     NamedPipe(std::string_view filename);
     ~NamedPipe();
